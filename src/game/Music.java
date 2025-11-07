@@ -1,5 +1,7 @@
 package game;
 
+import javazoom.jl.decoder.Bitstream;
+import javazoom.jl.decoder.Header;
 import javazoom.jl.player.Player;
 
 import java.io.BufferedInputStream;
@@ -56,5 +58,37 @@ public class Music extends Thread{
 
     public boolean isPlaying() {
         return isPlaying;
+    }
+
+    // ✅ MP3 전체 길이 (초) 구하기
+    public static int getMusicLength(String filename) {
+        try {
+            File file = new File(Main.class.getResource("../music/" + filename).toURI());
+            FileInputStream fis = new FileInputStream(file);
+            Bitstream bitstream = new Bitstream(fis);
+            Header header = bitstream.readFrame();
+
+            if (header == null) return 0;
+
+            int bitrate = header.bitrate(); // bps
+            long fileSizeBits = file.length() * 8;
+
+            int lengthInSeconds = (int) (fileSizeBits / bitrate);
+
+            bitstream.close();
+            fis.close();
+            return lengthInSeconds;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    // ✅ mm:ss 포맷 변환
+    public static String formatTime(int sec) {
+        int min = sec / 60;
+        int s = sec % 60;
+        return String.format("%02d:%02d", min, s);
     }
 }
