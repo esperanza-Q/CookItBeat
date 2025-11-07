@@ -8,6 +8,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 
+import static game.Space.StageManager.spaceBackgroundMusic;
+
 public class SpaceAnimation extends JPanel {
 
     private Image background;
@@ -32,8 +34,27 @@ public class SpaceAnimation extends JPanel {
     private final long TAP_THRESHOLD = 250; // 0.15초 이하면 "짧게 누름"
     private boolean autoReverse = false;
 
+//    protected Timer syncTimer;
+
+    // ✅ 음악 진행 바 관련
+    private Image progressBarBackground; // 위에서 올린 progress bar 배경 (검은색 바와 3개의 청록색 블록)
+    private Image spaceshipIcon;         // 위에서 올린 우주선 아이콘 (혹은 적절한 아이콘)
+    private int spaceshipX;              // 우주선 아이콘의 X 좌표
+    private final int BAR_X = 20;        // 바를 그릴 시작 X 좌표
+    private final int BAR_Y = 20;        // 바를 그릴 시작 Y 좌표
+    private final int BAR_WIDTH = 450;   // 바의 너비 (조정 필요)
+    private final int BAR_HEIGHT = 40;   // 바의 높이 (조정 필요)
+
+    // ✅ 스테이지 전환 시간 설정 (예: 음악 시작 후 10초)
+    protected final int NEXT_STAGE_TIME_MS = 25 * 1000;
+
+    private boolean isTransitionTriggered = false; // 전환 중복 방지 플래그
+
     //애니메이션 버전
     public SpaceAnimation() {
+        // ✅ 우주선 위치 초기화 추가
+        // 우주선은 바의 오른쪽 끝에서 시작합니다.
+        this.spaceshipX = BAR_X + BAR_WIDTH;
 
         //배경
         background = new ImageIcon(Main.class.getResource("../images/alienStage_image/Background(deco_x).png")).getImage();
@@ -59,6 +80,10 @@ public class SpaceAnimation extends JPanel {
         L_currentControlImage = L_control01;
         rightFrames = new Image[]{R_control01, R_control02, R_control03, R_control04};
         R_currentControlImage = R_control01;
+
+        // ✅ 음악 진행 바 이미지 로드
+        progressBarBackground = new ImageIcon(Main.class.getResource("../images/mainUI/alienStage_progBar.png")).getImage(); // 파일명을 적절히 변경하세요.
+        spaceshipIcon = new ImageIcon(Main.class.getResource("../images/mainUI/alienStage_progIcon.png")).getImage(); // 파일명을 적절히 변경하세요.
 
 
         Timer timer = new Timer(8, e -> {  // 60FPS
@@ -96,13 +121,13 @@ public class SpaceAnimation extends JPanel {
             }
         });
 
-        // ✅ 스페이스바 입력 이벤트
         addKeyListener(new java.awt.event.KeyAdapter() {
 
             @Override
             public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE && !isHolding) {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) { // isHolding 검사 제거
                     isHolding = true;
+                    // pressTime, autoReverse 초기화 로직은 그대로 유지 (다른 로직에 영향 줄 수 있음)
                     pressTime = System.currentTimeMillis();
                     autoReverse = false;   // 초기화
 
@@ -114,16 +139,8 @@ public class SpaceAnimation extends JPanel {
             public void keyReleased(java.awt.event.KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE && isHolding) {
                     isHolding = false;
-                    long duration = System.currentTimeMillis() - pressTime;
 
-                    if (duration <= TAP_THRESHOLD) {
-                        // ✅ 짧게 눌렀음 → forward 끝나면 자동 reverse
-                        autoReverse = true;
-
-                    } else {
-                        // ✅ 길게 눌렀음 → 바로 역방향
-                        startReverseAnimation();
-                    }
+                    // autoReverse = true; 로직 제거
                 }
             }
         });
@@ -182,6 +199,20 @@ public class SpaceAnimation extends JPanel {
         g2.drawImage(planets1, at, this);
         g2.dispose();
 
+        // ----------------------------------------------------------------------
+        // ✅ [핵심 수정 위치] 캐논 그리기 (행성 위에, 컨트롤러보다 뒤에)
+        // ----------------------------------------------------------------------
+        SpaceAnimation current = StageManager.getCurrentStage();
+        if (current != null) {
+            // 현재 스테이지가 제공하는 고유의 캐논 이미지를 가져옴
+            Image cannonImage = current.getCannon();
+
+            if (cannonImage != null) {
+                g.drawImage(cannonImage, 0, 0, null); // ‼️ 캐논을 행성 위에 그립니다.
+            }
+        }
+        // ----------------------------------------------------------------------
+
 
         // 컨트롤러 (원하는 위치에 그리기)
         g.drawImage(controller, 0, 0, getWidth(), getHeight(), this);
@@ -192,16 +223,54 @@ public class SpaceAnimation extends JPanel {
         //오른쪽 컨트롤러
         g.drawImage(R_currentControlImage, 0, 0, getWidth(), getHeight(), this);
 
+        // ----------------------------------------------------------------------
+        // ✅ 음악 진행 바 및 우주선 그리기 (새로 추가)
+        // ----------------------------------------------------------------------
+
+        // 1. 진행 바 배경 그리기
+        if (progressBarBackground != null) {
+            g.drawImage(progressBarBackground, BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT, this);
+        }
+
+        // 2. 우주선 아이콘 그리기
+        if (spaceshipIcon != null) {
+            int iconSize = BAR_HEIGHT + 10; // 아이콘 크기를 바 높이보다 약간 크게 설정
+            int iconY = BAR_Y + (BAR_HEIGHT - iconSize) / 2; // 바 중앙에 오도록 Y 좌표 계산
+
+            // spaceshipX는 바의 *진행* 좌표이고, 실제 우주선은 그 중앙에 위치해야 함
+            g.drawImage(spaceshipIcon, spaceshipX - iconSize / 2, iconY, iconSize, iconSize, this);
+        }
+        // ----------------------------------------------------------------------
+
+
         // ✅ Stage별 추가요소 hook
         drawStageObjects(g);
+
     }
 
-    //스페이스바 관련
     private void startForwardAnimation() {
-        if (isAnimating) return;
+
+        // 1. 순방향 애니메이션이 이미 진행 중이면 무시 (중간에 리셋되는 것을 방지)
+        if (forwardTimer.isRunning()) {
+            return;
+        }
+
+        // 2. ✅ [수정] 역방향 애니메이션이 진행 중이라면 즉시 중단
+        if (reverseTimer.isRunning()) {
+            reverseTimer.stop();
+            isAnimating = false; // 전체 애니메이션 잠금 해제
+        }
+
+        // 3. 애니메이션을 항상 시작 프레임(R_control01)으로 리셋
+        frameIndex = 0;
+        R_currentControlImage = rightFrames[frameIndex];
+
+        // 4. 순방향 애니메이션 시작
         isAnimating = true;
-        reverseTimer.stop();
         forwardTimer.start();
+
+        // 강제 repaint로 키 입력에 대한 시각적 반응 속도 증가
+        repaint();
     }
 
     private void startReverseAnimation() {
@@ -214,24 +283,24 @@ public class SpaceAnimation extends JPanel {
     private void setupAnimationTimers() {
 
         // 눌렀을 때 (1 → 4 순차)
-        forwardTimer = new Timer(32, e -> {
+        forwardTimer = new Timer(2, e -> {
             if (frameIndex < rightFrames.length - 1) {
                 frameIndex++;
                 R_currentControlImage = rightFrames[frameIndex];
                 repaint();
             } else {
+                // 🔥 순방향 애니메이션이 끝에 도달했을 때 (frameIndex == 3)
                 forwardTimer.stop();
-                isAnimating = false;
+                isAnimating = false; // 현재 순방향 애니메이션 종료
 
-                // ✅ forward 애니 끝났고, 짧게 눌렀다면 자동 reverse 실행
-                if (autoReverse) {
-                    autoReverse = false;
-                    startReverseAnimation();
-                }
+                // ✅ [수정 핵심] 길게 누름/짧게 누름 상관없이 무조건 역방향 시작
+                startReverseAnimation();
+
+                // 기존의 autoReverse 로직은 제거되었습니다.
             }
         });
 
-        reverseTimer = new Timer(70, e -> {
+        reverseTimer = new Timer(2, e -> {
             if (frameIndex > 0) {
                 frameIndex--;
                 R_currentControlImage = rightFrames[frameIndex];
@@ -243,24 +312,53 @@ public class SpaceAnimation extends JPanel {
         });
     }
 
+    // 🔥 스테이지마다 오버라이드해서 쓰는 메서드 (공통 진행 바 로직 포함)
+    protected void updateByMusicTime(int t) {
+        int totalLength = StageManager.musicLengthMs;
 
-//    @Override
-//    protected void paintComponent(Graphics g) {
-//        super.paintComponent(g);
-//
-//        // 배경
-//        g.drawImage(background, 0, 0, getWidth(), getHeight(), this);
-//
-//        // 공통 UI
-//        g.drawImage(controller, 0, 0, getWidth(), getHeight(), this);
-//        g.drawImage(L_currentControlImage, 0, 0, getWidth(), getHeight(), this);
-//        g.drawImage(R_currentControlImage, 0, 0, getWidth(), getHeight(), this);
-//
-//
-//    }
+        // 1. ✅ 우주선 위치 갱신 로직 재추가
+        if (totalLength > 0) {
+            // 진행률 계산: 0.0 (시작) ~ 1.0 (끝)
+            double progress = (double) t / totalLength;
 
-    protected void drawStageObjects(Graphics g) {
-        // 기본은 아무 것도 안 그림
+            int startX = BAR_X + BAR_WIDTH; // 바의 오른쪽 끝 (0% 진행)
+            int endX = BAR_X;               // 바의 왼쪽 끝 (100% 진행)
+
+            // 오른쪽에서 왼쪽으로 이동하는 좌표 계산
+            this.spaceshipX = startX - (int) (progress * BAR_WIDTH);
+
+            // -------------------------------------------------------------
+            // 2. 스테이지 전환 로직 (음악이 끝나기 전)
+            if (!isTransitionTriggered && t >= NEXT_STAGE_TIME_MS) {
+                isTransitionTriggered = true;
+
+                // 화면 전환 요청
+                SwingUtilities.invokeLater(this::requestStageChange);
+            }
+        }
+
+        // ✅ 우주선 위치가 바뀌었으므로 화면 갱신
+        repaint();
     }
 
+    protected void drawStageObjects(Graphics g) {}
+
+    // ✅ 화면 전환을 요청하는 메서드 (기존 로직 재활용)
+    private void requestStageChange() {
+        Container parent = this.getParent();
+        if (parent instanceof SpacePanel) {
+            // SpacePanel의 다음 스테이지 전환 메서드 호출
+            ((SpacePanel) parent).switchToNextPanel();
+        } else {
+            System.err.println("Error: SpaceAnimation's parent is not SpacePanel.");
+        }
+    }
+
+    // ✅ 스테이지별 캐논 이미지를 반환하는 메서드 추가
+// 스테이지에 따라 구현이 달라지므로, 하위 클래스에서 오버라이드해야 합니다.
+    public Image getCannon() {
+        // 기본적으로 null을 반환하거나, StageManager에 있는 기본 이미지를 반환할 수 있습니다.
+        // 여기서는 Stage별 구현을 강제하기 위해 기본적으로 null을 반환합니다.
+        return null;
+    }
 }
