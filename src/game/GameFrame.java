@@ -1,5 +1,7 @@
 package game;
 
+import game.Space.SpacePanel;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -17,7 +19,12 @@ public class GameFrame extends JFrame {
         setLocationRelativeTo(null);
         //게임창 닫으면 게임 종료
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //게임창 보이게
+        // SpacePanel 자체가 CardLayout 화면 컨트롤러
+        add(new SpacePanel());
+
         setVisible(true);
+
     }
+
+
 }
