@@ -30,3 +30,7 @@ bin/
 
 *.iml
 .idea/
+
+
+jl1.0.1.jar
+mysql-connector-j-9.5.0.jar
