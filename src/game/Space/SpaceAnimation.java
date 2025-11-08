@@ -1,6 +1,7 @@
 package game.Space;
 
 import game.Main;
+import game.Music; // ‼️ [추가] Music 클래스를 import 해야 합니다.
 
 import javax.swing.*;
 import java.awt.*;
@@ -146,6 +147,12 @@ public class SpaceAnimation extends JPanel {
                     if (isTimeInputBlocked()) {
                         return; // true가 반환되면, 즉시 메서드를 종료하고 입력을 무시
                     }
+
+                    // ----------------------------------------------------
+                    // 🚀 [추가] 스페이스바 누를 때 물 효과음 재생
+                    // ----------------------------------------------------
+                    Music.playEffect("water4.mp3");
+                    // ----------------------------------------------------
 
                     // isHolding 검사 제거 (이전 상태 유지)
                     isHolding = true;
@@ -366,7 +373,7 @@ public class SpaceAnimation extends JPanel {
             this.spaceshipX = startX - (int) (progress * BAR_WIDTH);
 
             // ----------------------------------------------------------------------
-            // 1. ✅ [복구] 자동 리듬 시각화 로직 (isAutoPlaying 모드)
+            // 1. ✅ [수정 위치] 자동 리듬 시각화 로직 (isAutoPlaying 모드)
             // ----------------------------------------------------------------------
             if (isAutoPlaying && autoPressTimes.length > 0) {
                 if (nextAutoPressIndex < autoPressTimes.length) {
@@ -374,9 +381,16 @@ public class SpaceAnimation extends JPanel {
 
                     // ‼️ [수정] 모션 딜레이에 관계없이 박자 도달 시 즉시 트리거
                     if (t >= pressTime) {
+
+                        // ----------------------------------------------------
+                        // 🚀 [추가] 자동 재생 시에도 물 효과음 재생
+                        // ----------------------------------------------------
+                        Music.playEffect("water4.mp3");
+                        // ----------------------------------------------------
+
                         // 1. 순방향 애니메이션 시작 (눌림) 및 이미지 변경
                         SwingUtilities.invokeLater(() -> {
-                            // changeStageImageOnPress(); // ‼️ 이 줄을 제거합니다. (startForwardAnimation 내부로 이동)
+                            // changeStageImageOnPress(); ‼️ 이 줄을 제거합니다. (startForwardAnimation 내부로 이동)
                             startForwardAnimation();   // 컨트롤러 애니메이션 시작
                         });
 
@@ -385,7 +399,7 @@ public class SpaceAnimation extends JPanel {
                         Timer releaseTimer = new Timer(releaseDelayMs, e -> {
                             // 역방향 애니메이션 시작
                             SwingUtilities.invokeLater(() -> {
-                                // changeStageImageOnRelease(); // ‼️ 이 줄을 제거합니다. (reverseTimer 완료 시점으로 이동)
+                                // changeStageImageOnRelease(); ‼️ 이 줄을 제거합니다. (reverseTimer 완료 시점으로 이동)
                                 startReverseAnimation();   // 컨트롤러 애니메이션 복구
                             });
                             ((Timer) e.getSource()).stop(); // 타이머 중지

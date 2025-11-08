@@ -40,7 +40,9 @@ public class Music extends Thread{
     //음악 멈춤
     public void close() {
         isLoop = false;
-        player.close();
+        if (player != null) {
+            player.close();
+        }
         this.interrupt();
     }
 
@@ -50,14 +52,23 @@ public class Music extends Thread{
         try {
             do {
                 player.play();
+                // ‼️ [추가] isLoop가 false(효과음)인 경우, 재생이 끝나면 스레드를 종료
+                if (!isLoop) break;
             } while(isLoop);
         }catch (Exception e){
-            System.out.println(e.getMessage());
+            // System.out.println(e.getMessage()); // 효과음 종료 시 발생하는 예외는 무시
         }
     }
 
     public boolean isPlaying() {
         return isPlaying;
+    }
+
+    // ✅ [추가] 효과음을 재생하는 스태틱 메서드
+    public static void playEffect(String fileName) {
+        // 루프 없이 효과음을 재생하고 바로 스레드를 시작합니다.
+        // 스레드가 종료되면 자원이 해제됩니다.
+        new Music(fileName, false).start();
     }
 
     // ✅ MP3 전체 길이 (초) 구하기
