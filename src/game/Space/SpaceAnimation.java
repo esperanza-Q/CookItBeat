@@ -18,6 +18,7 @@ public class SpaceAnimation extends JPanel {
     private Image R_control01, R_control02, R_control03, R_control04;
     private Image L_currentControlImage;
     private Image R_currentControlImage;
+    private Image ufo;
 
     private boolean isAnimating = false; // 중복 애니메이션 방지
     private Timer forwardTimer, reverseTimer;
@@ -34,6 +35,9 @@ public class SpaceAnimation extends JPanel {
     private final long TAP_THRESHOLD = 250; // 0.15초 이하면 "짧게 누름"
     private boolean autoReverse = false;
 
+    // ✅ [추가] 현재 음악 재생 시간 (ms)을 저장
+    protected int currentMusicTimeMs = 0;
+
 //    protected Timer syncTimer;
 
     // ✅ 음악 진행 바 관련
@@ -49,6 +53,14 @@ public class SpaceAnimation extends JPanel {
     protected final int NEXT_STAGE_TIME_MS = 25 * 1000;
 
     private boolean isTransitionTriggered = false; // 전환 중복 방지 플래그
+
+    // ✅ 자동 리듬 재생 플래그
+    private boolean isAutoPlaying = true; // 처음에는 자동으로 재생되도록 설정
+
+    // ✅ 자동 입력 타이밍 (ms). 이 배열은 각 스테이지에서 오버라이드해야 함
+    protected int[] autoPressTimes = {};
+    private int nextAutoPressIndex = 0; // 다음에 발생시킬 리듬의 인덱스
+//    private boolean isAutoPressTriggered = false; // 자동 누름 중복 방지 플래그
 
     //애니메이션 버전
     public SpaceAnimation() {
@@ -80,6 +92,9 @@ public class SpaceAnimation extends JPanel {
         L_currentControlImage = L_control01;
         rightFrames = new Image[]{R_control01, R_control02, R_control03, R_control04};
         R_currentControlImage = R_control01;
+
+        ufo = new ImageIcon(Main.class.getResource("../images/alienStage_image/ufo.png")).getImage();
+
 
         // ✅ 음악 진행 바 이미지 로드
         progressBarBackground = new ImageIcon(Main.class.getResource("../images/mainUI/alienStage_progBar.png")).getImage(); // 파일명을 적절히 변경하세요.
@@ -125,9 +140,16 @@ public class SpaceAnimation extends JPanel {
 
             @Override
             public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE) { // isHolding 검사 제거
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+
+                    // ‼️ [핵심 수정] isTimeInputBlocked() 호출 및 블록 로직 추가
+                    if (isTimeInputBlocked()) {
+                        return; // true가 반환되면, 즉시 메서드를 종료하고 입력을 무시
+                    }
+
+                    // isHolding 검사 제거 (이전 상태 유지)
                     isHolding = true;
-                    // pressTime, autoReverse 초기화 로직은 그대로 유지 (다른 로직에 영향 줄 수 있음)
+                    // pressTime, autoReverse 초기화 로직은 그대로 유지
                     pressTime = System.currentTimeMillis();
                     autoReverse = false;   // 초기화
 
@@ -138,9 +160,10 @@ public class SpaceAnimation extends JPanel {
             @Override
             public void keyReleased(java.awt.event.KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE && isHolding) {
-                    isHolding = false;
 
-                    // autoReverse = true; 로직 제거
+                    // 떼는 것은 시간 제한을 두지 않으므로 로직 변경 없음
+
+                    isHolding = false;
                 }
             }
         });
@@ -198,6 +221,8 @@ public class SpaceAnimation extends JPanel {
         // 그리기
         g2.drawImage(planets1, at, this);
         g2.dispose();
+
+        g.drawImage(ufo, 0, 0, getWidth(), getHeight(), this);
 
         // ----------------------------------------------------------------------
         // ✅ [핵심 수정 위치] 캐논 그리기 (행성 위에, 컨트롤러보다 뒤에)
@@ -265,6 +290,10 @@ public class SpaceAnimation extends JPanel {
         frameIndex = 0;
         R_currentControlImage = rightFrames[frameIndex];
 
+        // ✅ [추가] 순방향 애니메이션이 시작될 때 외계인 손 이미지 변경
+        // (changeStageImageOnPress는 SpaceStage1에서 currentUser=alien2 또는 cat2로 변경하는 메서드임)
+        changeStageImageOnPress();
+
         // 4. 순방향 애니메이션 시작
         isAnimating = true;
         forwardTimer.start();
@@ -283,6 +312,7 @@ public class SpaceAnimation extends JPanel {
     private void setupAnimationTimers() {
 
         // 눌렀을 때 (1 → 4 순차)
+        // ‼️ [수정] 애니메이션 반응 속도를 높이기 위해 딜레이 2ms로 복구
         forwardTimer = new Timer(2, e -> {
             if (frameIndex < rightFrames.length - 1) {
                 frameIndex++;
@@ -300,6 +330,7 @@ public class SpaceAnimation extends JPanel {
             }
         });
 
+        // ‼️ [수정] 애니메이션 반응 속도를 높이기 위해 딜레이 2ms로 복구
         reverseTimer = new Timer(2, e -> {
             if (frameIndex > 0) {
                 frameIndex--;
@@ -308,15 +339,22 @@ public class SpaceAnimation extends JPanel {
             } else {
                 reverseTimer.stop();
                 isAnimating = false;
+
+                // ✅ [추가] 역방향 애니메이션(모션)이 완전히 끝났을 때 외계인 손 이미지를 복구
+                // (changeStageImageOnRelease는 SpaceStage1에서 currentUser=alien1 또는 cat1로 복구하는 메서드임)
+                changeStageImageOnRelease();
             }
         });
     }
 
+
     // 🔥 스테이지마다 오버라이드해서 쓰는 메서드 (공통 진행 바 로직 포함)
     protected void updateByMusicTime(int t) {
+        this.currentMusicTimeMs = t; // ‼️ [추가] 현재 시간 업데이트
+
         int totalLength = StageManager.musicLengthMs;
 
-        // 1. ✅ 우주선 위치 갱신 로직 재추가
+        // 1. ✅ 우주선 위치 갱신 로직
         if (totalLength > 0) {
             // 진행률 계산: 0.0 (시작) ~ 1.0 (끝)
             double progress = (double) t / totalLength;
@@ -327,12 +365,58 @@ public class SpaceAnimation extends JPanel {
             // 오른쪽에서 왼쪽으로 이동하는 좌표 계산
             this.spaceshipX = startX - (int) (progress * BAR_WIDTH);
 
+            // ----------------------------------------------------------------------
+            // 1. ✅ [복구] 자동 리듬 시각화 로직 (isAutoPlaying 모드)
+            // ----------------------------------------------------------------------
+            if (isAutoPlaying && autoPressTimes.length > 0) {
+                if (nextAutoPressIndex < autoPressTimes.length) {
+                    int pressTime = autoPressTimes[nextAutoPressIndex];
+
+                    // ‼️ [수정] 모션 딜레이에 관계없이 박자 도달 시 즉시 트리거
+                    if (t >= pressTime) {
+                        // 1. 순방향 애니메이션 시작 (눌림) 및 이미지 변경
+                        SwingUtilities.invokeLater(() -> {
+                            // changeStageImageOnPress(); // ‼️ 이 줄을 제거합니다. (startForwardAnimation 내부로 이동)
+                            startForwardAnimation();   // 컨트롤러 애니메이션 시작
+                        });
+
+                        // 2. 일정 시간 후 역방향 애니메이션 예약 (떼기)
+                        int releaseDelayMs = 50;
+                        Timer releaseTimer = new Timer(releaseDelayMs, e -> {
+                            // 역방향 애니메이션 시작
+                            SwingUtilities.invokeLater(() -> {
+                                // changeStageImageOnRelease(); // ‼️ 이 줄을 제거합니다. (reverseTimer 완료 시점으로 이동)
+                                startReverseAnimation();   // 컨트롤러 애니메이션 복구
+                            });
+                            ((Timer) e.getSource()).stop(); // 타이머 중지
+                        });
+                        releaseTimer.setRepeats(false);
+                        releaseTimer.start();
+
+                        // ✅ 다음 리듬을 즉시 준비 (모션 딜레이와 무관하게 다음 입력 허용)
+                        nextAutoPressIndex++;
+                    }
+                } else if (nextAutoPressIndex == autoPressTimes.length) {
+                    // 모든 자동 재생 타이밍이 끝났을 때
+                    int lastPressTime = autoPressTimes[autoPressTimes.length - 1];
+
+                    // 마지막 입력 후 2초가 지났다면 데모 모드 비활성화
+                    if (t >= lastPressTime + 2000) {
+                        isAutoPlaying = false; // ✅ 여기서 비활성화됨
+                        // 💡 여기에 데모 종료 후 '플레이어 입력 활성화' 등 추가 로직을 넣을 수 있습니다.
+                    }
+                }
+            }
+
+            // ----------------------------------------------------------------------
+            // 2. ✅ 스테이지별 이벤트 플래그 처리 로직 (게임 상태 전환)
+            // ----------------------------------------------------------------------
+            processStageEvents(t);
+
             // -------------------------------------------------------------
-            // 2. 스테이지 전환 로직 (음악이 끝나기 전)
+            // 3. 스테이지 전환 로직 (음악이 끝나기 전)
             if (!isTransitionTriggered && t >= NEXT_STAGE_TIME_MS) {
                 isTransitionTriggered = true;
-
-                // 화면 전환 요청
                 SwingUtilities.invokeLater(this::requestStageChange);
             }
         }
@@ -360,5 +444,29 @@ public class SpaceAnimation extends JPanel {
         // 기본적으로 null을 반환하거나, StageManager에 있는 기본 이미지를 반환할 수 있습니다.
         // 여기서는 Stage별 구현을 강제하기 위해 기본적으로 null을 반환합니다.
         return null;
+    }
+
+    // ✅ 이미지 변경을 위한 추상 메서드 추가
+// (하위 스테이지에서 오버라이드하여 currentUser 이미지를 변경)
+    protected void changeStageImageOnPress() {
+        // Stage별 이미지를 변경하는 코드가 여기에 들어감 (기본 구현은 비워둡니다)
+    }
+
+    protected void changeStageImageOnRelease() {
+        // Stage별 이미지를 되돌리는 코드가 여기에 들어감
+    }
+
+    /**
+     * Stage별로 음악 시간에 따라 이벤트(예: currentUser 변경)를 처리하는 메서드.
+     * Stage1, 2 등에서 오버라이드하여 사용합니다.
+     */
+    protected void processStageEvents(int t) {
+        // 기본적으로 아무것도 하지 않음 (하위 클래스에서 구현)
+    }
+    /**
+     * ✅ [추가] 하위 Stage에서 오버라이드하여 특정 시간대에 입력을 막을지 결정하는 메서드
+     */
+    protected boolean isTimeInputBlocked() {
+        return false; // 기본적으로는 입력을 허용
     }
 }
