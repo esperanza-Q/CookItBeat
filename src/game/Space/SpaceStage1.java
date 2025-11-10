@@ -1,11 +1,13 @@
 package game.Space;
 
 import game.Main;
+import game.rhythm.RhythmJudgementManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.InputStream;
 
 public class SpaceStage1 extends SpaceAnimation {
 
@@ -48,23 +50,57 @@ public class SpaceStage1 extends SpaceAnimation {
     private final int ALIEN_APPEAR_TIME_7 = (int) (20.4 * 1000); // 0:20.4
     private final int ALIEN_APPEAR_TIME_8 = 22 * 1000; // 0:22
 
-    // ✅ 외계인 손 이미지 변경 타이밍 (alien1 -> alien2 -> alien1)
-    private final int[] ALIEN_PRESS_TIMES = {
-            3000, 6853, 7117, 7511, 7709,
-            14131, 16283, 16493, 16714, 20984,
-            21233, 21863
+    // ‼️ [수정] static으로 선언하여 super() 호출 전에 접근 가능하도록 변경
+    private static final int[] ALIEN_PRESS_TIMES_INT = {
+            // 외계인 손을 움직이는 타이밍은 여기 입력
+            3000,
+            6853, 7117, 7551, 7709,
+            14131, 16283, 16493, 16714,
+            20984, 21233, 21863
+    };
+
+    // ‼️ [수정] static으로 선언하여 super() 호출 전에 접근 가능하도록 변경 (판정 정답 타이밍)
+    private static final int[] USER_PRESS_TIMES_INT = {
+            // 6.5초 딴 (6.417s)
+            6417,
+            // 13초 따단따단 (10.284s, 10.547s, 10.942s, 11.140s)
+            10284, 10547, 10942, 11140,
+            // 17초 딴, 19초 딴딴딴 (17.563s, 19.704s, 19.931s, 20.140s)
+            17563, 19704, 19931, 20140,
+            // 22초 딴딴 딴 (22.711s, 22.938s, 23.533s)
+            22711, 22938, 23533
     };
 
     // ✅ 외계인 손이 alien2로 바뀐 후 돌아오는 타이밍
     private final int ALIEN_RELEASE_DELAY_MS = 50;
-    private final int[] ALIEN_RELEASE_TIMES = new int[ALIEN_PRESS_TIMES.length];
+    // ‼️ 인스턴스 변수이므로 super() 호출 후 초기화해야 함
+    private final int[] ALIEN_RELEASE_TIMES;
 
+
+    // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
+    private static long[] convertToLongArray(int[] array) {
+        long[] result = new long[array.length];
+        for (int i = 0; i < array.length; i++) {
+            result[i] = array[i];
+        }
+        return result;
+    }
 
     public SpaceStage1() {
-        // 부모 클래스에서 waterFrames 포함 모든 초기화 진행
-        super();
+        // 1. super() 호출을 첫 줄로 배치하고, static 헬퍼 메서드를 통해 인자를 준비합니다.
+        // ‼️ 판정 타이밍 배열(USER_PRESS_TIMES_INT)을 부모 클래스에 전달합니다.
+        super(convertToLongArray(USER_PRESS_TIMES_INT));
 
-        // 이미지 로드
+
+        // 2. 인스턴스 변수인 ALIEN_RELEASE_TIMES 초기화 (super() 호출 후 가능)
+        ALIEN_RELEASE_TIMES = new int[ALIEN_PRESS_TIMES_INT.length];
+
+        // ✅ 외계인 손 이미지 전환 해제 타이밍 계산
+        for (int i = 0; i < ALIEN_PRESS_TIMES_INT.length; i++) {
+            ALIEN_RELEASE_TIMES[i] = ALIEN_PRESS_TIMES_INT[i] + ALIEN_RELEASE_DELAY_MS;
+        }
+
+        // 3. 이미지 로드
         alien1 = new ImageIcon(Main.class.getResource("../images/alienStage_image/hologram_alien1.png")).getImage();
         alien2 = new ImageIcon(Main.class.getResource("../images/alienStage_image/hologram_alien2.png")).getImage();
         cat1 = new ImageIcon(Main.class.getResource("../images/alienStage_image/alien_catHand01.png")).getImage();
@@ -77,16 +113,11 @@ public class SpaceStage1 extends SpaceAnimation {
         // ‼️ 외계인 손은 초기엔 alien1 또는 null로 설정 (화면에 표시 여부는 processStageEvents에서 제어)
         currentAlien = null; // 초기에는 보이지 않도록 null로 설정
 
-        // ✅ 외계인 손 이미지 전환 해제 타이밍 계산
-        for (int i = 0; i < ALIEN_PRESS_TIMES.length; i++) {
-            ALIEN_RELEASE_TIMES[i] = ALIEN_PRESS_TIMES[i] + ALIEN_RELEASE_DELAY_MS;
-        }
-
         // ✅ [추가] 물총 애니메이션 타이머 설정
         setupWaterAnimationTimer();
     }
 
-    // ✅ [추가] 물총 애니메이션 타이머 설정 메서드 (SpaceAnimation에서 이동)
+    // ✅ [추가] 물총 애니메이션 타이머 설정 메서드
     private void setupWaterAnimationTimer() {
         waterAnimationTimer = new Timer(WATER_ANIMATION_DELAY, e -> {
             waterFrameIndex++;
@@ -102,10 +133,7 @@ public class SpaceStage1 extends SpaceAnimation {
         waterAnimationTimer.setRepeats(true);
     }
 
-    // ✅ [추가] 물총 애니메이션 시작 메서드 (SpaceAnimation의 빈 메서드 오버라이드)
-    // ‼️ [수정] 이 메서드를 오버라이드하려고 하면 오류가 발생할 수 있으므로,
-    //           로직은 그대로 유지하되, @Override를 제거합니다.
-    //           하지만 더 안전하게는 이 메서드를 processSpaceKeyPress()로 대체하여 사용합니다.
+    // ✅ [추가] 물총 애니메이션 시작 메서드
     protected void startWaterAnimation() {
         if (waterAnimationTimer.isRunning()) {
             waterAnimationTimer.stop(); // 중복 방지 및 리셋
@@ -116,28 +144,20 @@ public class SpaceStage1 extends SpaceAnimation {
         repaint();
     }
 
-    // ✅ [오버라이드] SpaceBar 입력 시 물총 애니메이션 실행 추가
-//    @Override
-//    public void keyPressed(KeyEvent e) {
-//        super.keyPressed(e);
-//        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-//            startWaterAnimation();
-//        }
-//    }
-
     // ✅ [오버라이드] SpaceAnimation에서 추출한 메서드를 오버라이드하여 물총 애니메이션 실행
     @Override
     protected void processSpaceKeyPress() {
+        // ‼️ 부모 클래스(SpaceAnimation)에서 판정 처리 후 이 메서드가 호출됨
         startWaterAnimation(); // SpaceStage1의 물총 애니메이션 시작 메서드 호출
     }
 
 
     @Override
     public void updateByMusicTime(int t) {
-        super.updateByMusicTime(t);
+        super.updateByMusicTime(t); // SpaceAnimation의 점수 업데이트 및 기본 로직 호출
 
-        // ✅ 외계인 손 자동 동작 타이밍 확인
-        for (int pressTime : ALIEN_PRESS_TIMES) {
+        // ✅ 외계인 손 자동 동작 타이밍 확인 (ALIEN_PRESS_TIMES_INT 사용)
+        for (int pressTime : ALIEN_PRESS_TIMES_INT) {
             if (t >= pressTime && t < pressTime + 50) {
                 if (currentAlien == alien1) currentAlien = alien2;
                 break;
@@ -159,11 +179,6 @@ public class SpaceStage1 extends SpaceAnimation {
 
         // ✅ 외계인 손을 왼쪽 y축 중간에 작게 그립니다.
         if (currentAlien != null) {
-//            int alienWidth = (int) (alien1.getWidth(null) * 0.4); // 적절한 크기로 조정 (예: 40%)
-//            int alienHeight = (int) (alien1.getHeight(null) * 0.4);
-//            int alienX = 50; // 왼쪽 여백
-//            int alienY = getHeight() / 2 - alienHeight / 2; // Y축 중간
-
             g.drawImage(currentAlien, 0, 0, getWidth(), getHeight(), null);
         }
 

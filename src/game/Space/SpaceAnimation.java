@@ -2,12 +2,16 @@ package game.Space;
 
 import game.Main;
 import game.Music;
+import game.rhythm.RhythmJudgementManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import static game.Space.StageManager.spaceBackgroundMusic;
 
@@ -58,10 +62,40 @@ public class SpaceAnimation extends JPanel {
 
     private boolean isTransitionTriggered = false;
     private boolean isAutoPlaying = false;
-    protected int[] autoPressTimes = {};
-    private int nextAutoPressIndex = 0;
+    protected int[] autoPressTimes = {}; // ‼️ 이제 이 변수는 사용하지 않습니다.
 
-    public SpaceAnimation() {
+    // ✅ [추가] 판정 시스템 관련
+    protected RhythmJudgementManager judgementManager;
+    private Image[] judgementImages = new Image[3]; // PERFECT, GREAT, MISS 이미지
+    private Image currentJudgementImage = null;
+    private String currentJudgementText = null;
+    private Timer judgementTimer;
+    private final int JUDGEMENT_DISPLAY_TIME_MS = 1000; // 판정 결과 표시 시간 (1초)
+
+    private final int GLOBAL_JUDGEMENT_OFFSET_MS = -260;
+
+    // ✅ [추가] 점수 오프셋 (이전 스테이지에서 이월된 점수)
+    private int scoreOffset = 0;
+    // ✅ [유지] 점수 표시 관련 변수 (단, 초기값은 0으로 유지)
+    private Font scoreFont;
+    private int currentScore = 0;
+
+
+    // ‼️ [수정] 정답 타이밍을 받아 RhythmJudgementManager 초기화
+    public SpaceAnimation(long[] correctTimings) {
+
+        // ✅ [수정] StageManager에서 이월된 점수를 로드
+        this.scoreOffset = StageManager.getTotalScore();
+        // 초기 currentScore 설정
+        this.currentScore = this.scoreOffset; // 화면 표시 점수 초기화
+
+        // ✅ [수정] RhythmJudgementManager 초기화 시, 누적 점수(scoreOffset)를 함께 전달합니다.
+        List<Long> timingsList = new ArrayList<>();
+        for (long time : correctTimings) {
+            timingsList.add(time);
+        }
+        // ‼️ [핵심 수정] judgementManager에 이월된 점수(scoreOffset)를 전달
+        this.judgementManager = new RhythmJudgementManager(timingsList, this.scoreOffset);
 
         // ✅ 물총 이미지 프레임 초기화 (하위 클래스에서 사용)
         waterFrames = new Image[4];
@@ -69,7 +103,11 @@ public class SpaceAnimation extends JPanel {
             waterFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/water0" + (i + 1) + ".png")).getImage();
         }
 
-        // ‼️ 물총 애니메이션 타이머 설정 및 로직 제거
+        // ✅ [추가] 판정 이미지 로드
+        judgementImages[0] = new ImageIcon(Main.class.getResource("../images/mainUI/acc_perfect.png")).getImage(); // PERFECT
+        judgementImages[1] = new ImageIcon(Main.class.getResource("../images/mainUI/acc_good.png")).getImage();    // GOOD (GREAT 포함)
+        judgementImages[2] = new ImageIcon(Main.class.getResource("../images/mainUI/acc_miss.png")).getImage();     // MISS
+
 
         // ✅ 우주선은 진행바 왼쪽에서 시작 (왼→오 이동)
         this.spaceshipX = 0;
@@ -103,6 +141,33 @@ public class SpaceAnimation extends JPanel {
         Timer timer = new Timer(8, e -> { t += speed; repaint(); });
         timer.start();
 
+        // ✅ [추가] 점수 표시 폰트 설정
+        // ✅ [추가] 폰트 파일을 로드하여 scoreFont 설정
+        try {
+            // 1. 폰트 파일을 InputStream으로 로드합니다. (프로젝트 내부 리소스 접근 방식)
+            InputStream is = Main.class.getResourceAsStream("../fonts/LAB디지털.ttf");
+
+            // ‼️ 주의: 폰트 파일 경로는 'game.Main' 클래스 위치 기준 상대 경로로 설정해야 합니다.
+            // 예를 들어, 폰트 파일이 'src/fonts' 폴더에 있다면 위와 같이 경로를 지정합니다.
+
+            if (is == null) {
+                // 파일 로드 실패 시 예외 처리
+                System.err.println("LAB디지털.ttf 폰트 파일을 찾을 수 없습니다. 기본 폰트를 사용합니다.");
+                scoreFont = new Font("Arial", Font.BOLD, 24);
+            } else {
+                // 2. 파일을 기반으로 폰트 객체를 생성합니다 (PLAIN 스타일, 크기는 24)
+                Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);
+
+                // 3. 원하는 스타일과 크기를 적용하여 최종 폰트 설정
+                scoreFont = baseFont.deriveFont(Font.BOLD, 24f);
+                is.close(); // InputStream 닫기
+            }
+
+        } catch (Exception e) {
+            System.err.println("폰트 로딩 중 오류 발생: " + e.getMessage());
+            scoreFont = new Font("Arial", Font.BOLD, 24); // 오류 발생 시 기본 폰트 사용
+        }
+
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -135,10 +200,8 @@ public class SpaceAnimation extends JPanel {
 
                     startForwardAnimation();
 
-                    // ‼️ [제거] 물총 애니메이션 시작 로직 제거. 하위 클래스에서 오버라이딩하여 호출해야 함.
-                    // startWaterAnimation();
-                    // ✅ [수정] 스페이스바 로직을 처리하는 protected 메서드 호출
-                    processSpaceKeyPress();
+                    // ✅ [수정] 스페이스바 로직(판정 처리 포함)을 처리하는 protected 메서드 호출
+                    processSpaceKeyPressLogic();
                 }
             }
 
@@ -151,15 +214,67 @@ public class SpaceAnimation extends JPanel {
         });
 
         setupAnimationTimers();
+        setupJudgementTimer(); // ✅ 판정 결과 출력 타이머 초기화
         setFocusable(true);
         requestFocus();
     }
 
-    // ‼️ 물총 애니메이션 타이머 설정 메서드 제거
-    // private void setupWaterAnimationTimer() {...}
+    // ‼️ 기본 생성자 (하위 클래스에서 호출하지 않음)
+    public SpaceAnimation() {
+        this(new long[]{});
+    }
 
-    // ‼️ 물총 애니메이션 시작 메서드 제거 (하위 클래스에서 필요하다면 오버라이드할 수 있도록)
-//    protected void startWaterAnimation() {}
+
+    // ✅ [추가] 판정 결과 출력 타이머 초기화
+    private void setupJudgementTimer() {
+        judgementTimer = new Timer(JUDGEMENT_DISPLAY_TIME_MS, e -> {
+            currentJudgementImage = null;
+            currentJudgementText = null;
+            judgementTimer.stop();
+            repaint();
+        });
+        judgementTimer.setRepeats(false);
+    }
+
+    // ✅ [수정] SpaceBar 키 입력 시 처리 로직
+    protected void processSpaceKeyPressLogic() {
+        // 1. 판정 로직 수행
+        if (judgementManager != null) {
+
+            // ‼️ 오프셋 적용된 음악 시간 계산: 입력 시간을 47ms 앞으로 당겨서 보정
+            int adjustedMusicTime = currentMusicTimeMs + GLOBAL_JUDGEMENT_OFFSET_MS;
+
+            // ‼️ 조정된 시간을 판정 함수에 전달
+            judgementManager.handleInput(adjustedMusicTime);
+
+            String judgement = judgementManager.getLastJudgement();
+
+
+            // 2. 판정 결과 이미지 및 텍스트 설정
+            switch (judgement) {
+                case "PERFECT!":
+                    currentJudgementImage = judgementImages[0];
+                    break;
+                case "GREAT!":
+                case "GOOD":
+                    currentJudgementImage = judgementImages[1];
+                    break;
+                case "MISS":
+                    currentJudgementImage = judgementImages[2];
+                    break;
+            }
+            currentJudgementText = judgement;
+
+            // 3. 타이머 재시작 (1초간 이미지 표시)
+            if (judgementTimer.isRunning()) {
+                judgementTimer.stop();
+            }
+            judgementTimer.start();
+        }
+
+        // 4. 하위 클래스(Stage1)의 추가 애니메이션 로직 호출
+        processSpaceKeyPress();
+    }
 
     // ✅ [추가] SpaceBar 키 입력 시 하위 클래스가 로직을 추가할 수 있도록 메서드 추출
     protected void processSpaceKeyPress() {
@@ -219,9 +334,49 @@ public class SpaceAnimation extends JPanel {
             g.drawImage(spaceshipIcon, spaceshipX - iconSize / 2, iconY, iconSize, iconSize, this);
         }
 
-        drawStageObjects(g);
+        // ✅ [추가] 점수 그리기
+        g.setColor(Color.WHITE); // 점수 글자 색상
+        g.setFont(scoreFont);
 
-        // ‼️ [제거] 물총 그리는 로직 제거
+        // 점수 텍스트 생성
+        String scoreText = String.format("%d", currentScore);
+
+        // 오른쪽 상단에 위치 설정 (오른쪽에서 20px, 위쪽에서 60px 떨어진 곳)
+        FontMetrics fm = g.getFontMetrics(scoreFont);
+        int scoreX = getWidth() - fm.stringWidth(scoreText) - 40;
+        int scoreY = 48; // 진행 바보다 아래에 위치
+
+        // 그림자 효과를 위해 살짝 아래와 오른쪽에 검은색으로 먼저 그림
+        g.setColor(new Color(0, 0, 0, 150)); // 반투명 검은색
+        g.drawString(scoreText, scoreX + 3, scoreY + 3);
+
+        // 실제 점수 그리기
+        g.setColor(Color.WHITE);
+        g.drawString(scoreText, scoreX, scoreY);
+
+        drawStageObjects(g);
+        drawJudgement(g); // ✅ 판정 결과 그리기
+    }
+
+    // ✅ [추가] 판정 결과 이미지를 화면 중앙에 그리는 메서드
+    private void drawJudgement(Graphics g) {
+        if (currentJudgementImage != null) {
+            int imgWidth = 200; // 적절한 크기
+            int imgHeight = 200;
+            int imgX = (getWidth() - imgWidth) / 2;
+            int imgY = (getHeight() - imgHeight) / 2;
+            g.drawImage(currentJudgementImage, imgX, imgY, imgWidth, imgHeight, this);
+
+            // 텍스트는 이미지 아래에 작게 출력 (선택 사항)
+//            if (currentJudgementText != null) {
+//                g.setColor(Color.WHITE);
+//                g.setFont(new Font("Arial", Font.BOLD, 24));
+//                FontMetrics fm = g.getFontMetrics();
+//                int textX = (getWidth() - fm.stringWidth(currentJudgementText)) / 2;
+//                int textY = imgY + imgHeight + 30; // 이미지 아래
+//                g.drawString(currentJudgementText, textX, textY);
+//            }
+        }
     }
 
     private void startForwardAnimation() {
@@ -271,6 +426,8 @@ public class SpaceAnimation extends JPanel {
     }
 
     protected void updateByMusicTime(int t) {
+//        super.updateByMusicTime(t);
+
         this.currentMusicTimeMs = t;
 
         int totalLength = StageManager.musicLengthMs;
@@ -290,6 +447,18 @@ public class SpaceAnimation extends JPanel {
                 isTransitionTriggered = true;
                 SwingUtilities.invokeLater(this::requestStageChange);
             }
+        }
+
+        // ✅ [수정] 현재 점수 갱신 및 StageManager에 저장
+        if (judgementManager != null) {
+            int currentStageScore = judgementManager.getScore();
+
+            // ‼️ [수정] 이월된 점수 + 현재 스테이지 점수를 합산하여 전체 점수를 StageManager에 저장합니다.
+            int totalGameScore = this.scoreOffset + currentStageScore;
+            StageManager.setTotalScore(totalGameScore);
+
+            // ‼️ [추가] 로컬 currentScore 변수를 갱신하여 paintComponent에서 올바른 점수를 그리도록 합니다.
+            this.currentScore = totalGameScore;
         }
 
         repaint();
