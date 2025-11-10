@@ -21,6 +21,9 @@ public class StageManager {
 
     private static SpaceAnimation currentStage;
 
+    // ✅ [추가] 스테이지 간에 공유할 점수 변수
+    private static int totalScore = 0;
+
     public static void setCurrentStage(SpaceAnimation stage) {
         currentStage = stage;
         // stage.startAnimation() 호출 제거: 타이머는 StageManager가 영구적으로 관리합니다.
@@ -103,5 +106,15 @@ public class StageManager {
             syncTimer.start(); // 타이머 시작
             isMusicStarted = true;
         }
+    }
+
+    // ✅ [추가] 점수를 설정하는 메서드
+    public static void setTotalScore(int score) {
+        totalScore = score;
+    }
+
+    // ✅ [추가] 점수를 가져오는 메서드
+    public static int getTotalScore() {
+        return totalScore;
     }
 }
