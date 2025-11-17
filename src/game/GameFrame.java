@@ -15,7 +15,7 @@ public class GameFrame extends JFrame {
 
         setTitle("Game");
         setSize(Main.SCREEN_WIDTH, Main.SCREEN_HEIGHT);
-// ✅ [핵심] 게임 시작 시 이전 상태 정리 및 초기화
+        // ✅ [핵심] 게임 시작 시 이전 상태 정리 및 초기화
         StageManager.resetGame();
 
         // ✅ 게임 시작 시 음악 & 기습 여부 설정
