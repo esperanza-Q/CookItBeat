@@ -58,7 +58,8 @@ public class SpaceAnimation extends JPanel {
     private final int BAR_Y = 20;
 
     // ✅ 스테이지 전환 시간 설정 (예: 음악 시작 후 25초)
-    protected final int NEXT_STAGE_TIME_MS = 25 * 1000;
+    protected final int NEXT_STAGE_2_TIME_MS = 25 * 1000;
+    protected final int NEXT_STAGE_3_TIME_MS = (int) (53.5 * 1000);
 
     private boolean isTransitionTriggered = false;
     private boolean isAutoPlaying = false;
@@ -193,7 +194,7 @@ public class SpaceAnimation extends JPanel {
 
                 if (e.getKeyCode() == KeyEvent.VK_SPACE) {
 
-                    Music.playEffect("water4.mp3");
+                    Music.playEffect("water_pong2.mp3");
                     isHolding = true;
                     pressTime = System.currentTimeMillis();
                     autoReverse = false;
@@ -353,7 +354,7 @@ public class SpaceAnimation extends JPanel {
         // 실제 점수 그리기
         g.setColor(Color.WHITE);
         g.drawString(scoreText, scoreX, scoreY);
-
+        
         drawStageObjects(g);
         drawJudgement(g); // ✅ 판정 결과 그리기
     }
@@ -442,10 +443,15 @@ public class SpaceAnimation extends JPanel {
             this.spaceshipX = barX + (int) (progress * BAR_WIDTH);
 
             processStageEvents(t);
-
-            if (!isTransitionTriggered && t >= NEXT_STAGE_TIME_MS) {
+            
+            if (!isTransitionTriggered && t >= NEXT_STAGE_2_TIME_MS && t < NEXT_STAGE_3_TIME_MS) {
                 isTransitionTriggered = true;
-                SwingUtilities.invokeLater(this::requestStageChange);
+                SwingUtilities.invokeLater(this::requestStage2Change);
+            }
+            
+            if (isTransitionTriggered && t >= NEXT_STAGE_3_TIME_MS) {
+                isTransitionTriggered = false;
+                SwingUtilities.invokeLater(this::requestStage3Change);
             }
         }
 
@@ -465,12 +471,20 @@ public class SpaceAnimation extends JPanel {
     }
 
     protected void drawStageObjects(Graphics g) {}
-
-    private void requestStageChange() {
+    
+    private void requestStage2Change() {
         Container parent = this.getParent();
-        if (parent instanceof SpacePanel) ((SpacePanel) parent).switchToNextPanel();
+        if (parent instanceof SpacePanel) ((SpacePanel) parent).switchToStage2Panel();
         else System.err.println("Error: SpaceAnimation's parent is not SpacePanel.");
     }
+    
+    // ✅ [추가] 스테이지3으로의 변환 메서드를 추가
+    private void requestStage3Change() {
+        Container parent = this.getParent();
+        if (parent instanceof SpacePanel) ((SpacePanel) parent).switchToStage3Panel();
+        else System.err.println("Error: SpaceAnimation's parent is not SpacePanel.");
+    }
+
 
     public Image getCannon() { return null; }
 
