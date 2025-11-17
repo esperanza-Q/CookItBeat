@@ -360,7 +360,7 @@ class Material extends Thread{
 	public void drop() {
 		x += SpaceStage3.MAT_SPEED;
 		y += SpaceStage3.MAT_SPEED;
-		System.out.println("Note Position: (" + x + ", " + y + ")");
+		//System.out.println("Note Position: (" + x + ", " + y + ")");
 	}
 	
 	@Override
