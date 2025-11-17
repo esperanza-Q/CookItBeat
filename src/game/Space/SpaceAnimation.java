@@ -34,6 +34,9 @@ public class SpaceAnimation extends JPanel {
     protected Image[] waterFrames;
     // ‼️ 물총 관련 Timer, Index, Image 변수 및 로직은 SpaceStage1로 이동
 
+    // 공기포 관련 이미지 배열
+    protected Image[] BoomFrames;
+
     //‼️애니메이션 버전
     private Image planets1;
     private double t = 0;
@@ -102,6 +105,13 @@ public class SpaceAnimation extends JPanel {
         for (int i = 0; i < 4; i++) {
             waterFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/water0" + (i + 1) + ".png")).getImage();
         }
+
+        BoomFrames = new Image[3];
+        for (int i = 0; i < 3; i++) {
+            BoomFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/Boom0" + (i + 1) + ".png")).getImage();
+        }
+
+
 
         // ✅ [추가] 판정 이미지 로드
         judgementImages[0] = new ImageIcon(Main.class.getResource("../images/mainUI/acc_perfect.png")).getImage(); // PERFECT
@@ -205,6 +215,7 @@ public class SpaceAnimation extends JPanel {
                 }
             }
 
+
             @Override
             public void keyReleased(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE && isHolding) {
@@ -212,6 +223,8 @@ public class SpaceAnimation extends JPanel {
                 }
             }
         });
+
+
 
         setupAnimationTimers();
         setupJudgementTimer(); // ✅ 판정 결과 출력 타이머 초기화
@@ -320,6 +333,11 @@ public class SpaceAnimation extends JPanel {
             if (cannonImage != null) g.drawImage(cannonImage, 0, 0, null);
         }
 
+        // 🔹 이 시점까지는 배경/행성/UFO/대포까지만 그림
+        //    → 여기서 스테이지별 "컨트롤러 아래" 오브젝트들을 그림
+        drawStageObjectsUnderController(g);
+
+        // 🔹 이제 컨트롤러 + 손(조종간) 그리기 → 이 위로 면발이 지나가게 됨
         g.drawImage(controller, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(L_currentControlImage, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(R_currentControlImage, 0, 0, getWidth(), getHeight(), this);
@@ -478,4 +496,6 @@ public class SpaceAnimation extends JPanel {
     protected void changeStageImageOnRelease() {}
     protected void processStageEvents(int t) {}
     protected boolean isTimeInputBlocked() { return false; }
+    // 🔹 새로 추가: 컨트롤러보다 아래에 깔릴 오브젝트용 훅
+    protected void drawStageObjectsUnderController(Graphics g) {}
 }
