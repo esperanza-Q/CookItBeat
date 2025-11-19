@@ -9,8 +9,10 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -56,11 +58,13 @@ public class SpaceStage3 extends SpaceAnimation {
 	// ✅ [추가] 외계인 손 현재 이미지
 	private Image currentAlien;
 
-	/*
-	 * ✅ [추가] 물총 애니메이션 관련 변수 -> 레이저 애니메이션으로 교체 예정 private Image currentWaterImage =
-	 * null; private Timer waterAnimationTimer; private int waterFrameIndex = 0;
-	 * private final int WATER_ANIMATION_DELAY = 50; // 물총 이미지 전환 속도 (ms)
-	 */
+	
+	// ✅ [추가] 레이저 애니메이션 관련 변수
+	public static Image currentLaserImage = null;
+	private Timer laserAnimationTimer;
+	private int laserFrameIndex = 0;
+	private final int LASER_ANIMATION_DELAY = 50; // 레이저 이미지 전환 속도 (ms)
+	
 
 	// 이벤트 발동 여부
 	private boolean event1Triggered = false;
@@ -147,10 +151,45 @@ public class SpaceStage3 extends SpaceAnimation {
 		currentUser = cat1;
 		// ‼️ 외계인 손은 초기엔 alien1 또는 null로 설정 (화면에 표시 여부는 processStageEvents에서 제어)
 		currentAlien = null; // 초기에는 보이지 않도록 null로 설정
-		/*
-		 * 레이저로 수정예정 // ✅ [추가] 물총 애니메이션 타이머 설정 setupWaterAnimationTimer();
-		 */
-
+		
+		// ✅ [추가] 물총 애니메이션 타이머 설정
+		setupLaserAnimationTimer();
+		
+		
+		// ✅ [추가] 스테이지3 이벤트 처리
+        addMouseListener(new MouseAdapter() {
+        	@Override
+        	public void mouseClicked(MouseEvent e) {
+        	    int clickX = e.getX();
+        	    int clickY = e.getY();
+        	    
+        	    int materialIndex = -1;
+        	    
+        	    // 충돌 판정 루프
+        	    for (int i = 0; i < matList.size(); i++) {
+        	    	Material mat = matList.get(i);
+        	    	
+        	        if (mat.getBounds().contains(clickX, clickY)) {
+        	            
+        	        	materialIndex = i; // ⭐️ 클릭된 재료의 인덱스 저장
+                        
+                        // 1. 레이저 이미지 설정 요청 (인덱스 기반)
+                        updateLaserFramesByMaterialIndex(materialIndex);
+                        
+        	            // ⭐️ 1. 타이머 시작 요청
+        	            startLaserAnimation(); 
+        	            
+        	            // ⭐️ 2. 이미지 회전 방향 설정 요청
+        	            //mat.setTargetDirection(clickX, clickY);
+        	            
+        	            // 한 번에 하나만 처리
+        	            break;
+        	        }
+        	    }
+        	    repaint();
+        	}
+        });
+        
 		// 1. 10ms 간격으로 타이머 설정
 		gameTimer = new Timer(SLEEP_TIME, e -> {
 			// 2. 타이머 틱마다 모든 재료의 좌표를 업데이트
@@ -178,27 +217,69 @@ public class SpaceStage3 extends SpaceAnimation {
 		gameTimer.start();
 
 	}
+	
+	protected void updateLaserFramesByMaterialIndex(int materialIndex) {
+	    // 인덱스 그룹 A: 1, 4, 8, 9 -> laser01, laser02 사용
+	    Integer[] groupA = {1, 4, 8, 9};
+	    // 인덱스 그룹 B: 0, 5, 6 -> laser03, laser04 사용
+	    Integer[] groupB = {0, 5, 6};
+	    Integer[] groupC = {2, 3, 7};
 
-	/*
-	 * 레이저로 수정 예정 // ✅ [추가] 물총 애니메이션 타이머 설정 메서드 private void
-	 * setupWaterAnimationTimer() { waterAnimationTimer = new
-	 * Timer(WATER_ANIMATION_DELAY, e -> { waterFrameIndex++; if (waterFrameIndex <
-	 * waterFrames.length) { currentWaterImage = waterFrames[waterFrameIndex]; }
-	 * else { // 애니메이션 종료 후 이미지 null로 설정 waterAnimationTimer.stop();
-	 * currentWaterImage = null; } repaint(); });
-	 * waterAnimationTimer.setRepeats(true); }
-	 * 
-	 * // ✅ [추가] 물총 애니메이션 시작 메서드 protected void startWaterAnimation() { if
-	 * (waterAnimationTimer.isRunning()) { waterAnimationTimer.stop(); // 중복 방지 및 리셋
-	 * } waterFrameIndex = 0; currentWaterImage = waterFrames[waterFrameIndex];
-	 * waterAnimationTimer.start(); repaint(); }
-	 * 
-	 * // ✅ [오버라이드] SpaceAnimation에서 추출한 메서드를 오버라이드하여 물총 애니메이션 실행
-	 * 
-	 * @Override protected void processSpaceKeyPress() { // ‼️ 부모
-	 * 클래스(SpaceAnimation)에서 판정 처리 후 이 메서드가 호출됨 startWaterAnimation(); //
-	 * SpaceStage1의 물총 애니메이션 시작 메서드 호출 }
-	 */
+	    String baseFileName;
+
+	    if (Arrays.asList(groupA).contains(materialIndex)) {
+	        baseFileName = "laser0"; // 파일명: laser01.png, laser02.png
+	    } else if (Arrays.asList(groupB).contains(materialIndex)) {
+	        baseFileName = "laser0"; // 파일명: laser03.png, laser04.png (실제 파일명이 laser03, laser04인 경우)
+	    } else {
+	        // 기본값 또는 다른 그룹 설정 (예: 나머지 인덱스는 laser05, laser06)
+	        baseFileName = "laser0"; // 기본값 파일명: laser01.png, laser02.png 사용
+	    }
+	    
+	    // **가정**: 
+	    // Group A는 laser01.png, laser02.png 사용
+	    // Group B는 laser03.png, laser04.png 사용
+
+	    if (Arrays.asList(groupA).contains(materialIndex)) {
+	        laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser01.png")).getImage();
+	        laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser02.png")).getImage();
+	    } else if (Arrays.asList(groupB).contains(materialIndex)) {
+	        laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser03.png")).getImage();
+	        laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser04.png")).getImage();
+	    } else if (Arrays.asList(groupC).contains(materialIndex)) {
+	        // 나머지 인덱스의 기본값 처리
+	        laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser05.png")).getImage();
+	        laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser06.png")).getImage();
+	    }
+	}
+
+	// ✅ [추가] 레이저 애니메이션 타이머 설정 메서드
+    private void setupLaserAnimationTimer() {
+        laserAnimationTimer = new Timer(LASER_ANIMATION_DELAY, e -> {
+            laserFrameIndex++;
+            if (laserFrameIndex < laserFrames.length) {
+                currentLaserImage = laserFrames[laserFrameIndex];
+            } else {
+                // 애니메이션 종료 후 이미지 null로 설정
+                laserAnimationTimer.stop();
+                currentLaserImage = null;
+            }
+            repaint();
+        });
+        laserAnimationTimer.setRepeats(true);
+    }
+    
+    // ✅ 레이저 애니메이션 시작 메서드
+    protected void startLaserAnimation() {
+        if (laserAnimationTimer.isRunning()) {
+            laserAnimationTimer.stop(); // 중복 방지 및 리셋
+        }
+        laserFrameIndex = 0;
+        currentLaserImage = laserFrames[laserFrameIndex];
+        laserAnimationTimer.start();
+        repaint();
+    }
+
 
 	@Override
 	public void updateByMusicTime(int t) {
@@ -349,7 +430,8 @@ public class SpaceStage3 extends SpaceAnimation {
 		// ‼️ 입력 차단 로직 제거 요청에 따라 항상 false 반환
 		return false;
 	}
-
+	
+	
 	// answerTimeMs : 정답 타이밍
 	public void dropMats(long answerTimeMs, String matType, int speedX, int speedY, int destX) {
 
@@ -359,11 +441,7 @@ public class SpaceStage3 extends SpaceAnimation {
 		long dropStartTime = posAndTime[1];
 
 		// 2. Material 객체 생성 (고정 Y 좌표와 계산된 X, 시간 사용)
-		Material newMat = new Material(startX, FIXED_START_Y, matType, speedX, speedY, answerTimeMs, dropStartTime // 👈
-																													// 출발
-																													// 시간
-																													// 전달
-		);
+		Material newMat = new Material(startX, FIXED_START_Y, matType, speedX, speedY, answerTimeMs, dropStartTime);
 
 		// 3. 리스트에 추가
 		matList.add(newMat);
@@ -411,7 +489,7 @@ public class SpaceStage3 extends SpaceAnimation {
 			final int MATERIAL_HEIGHT = 300; // 재료 이미지의 높이 (실제 값으로 대체 필요)
 
 			// 재료의 Y 좌표가 화면 하단 + 재료 높이보다 커지면 제거
-			if (mat.y > SCREEN_HEIGHT + MATERIAL_HEIGHT) {
+			if (mat.getY() > SCREEN_HEIGHT + MATERIAL_HEIGHT) {
 
 				// ⭐️ 판정에 성공하지 못하고 화면을 벗어난 경우의 패널티 로직 (필요하다면 추가)
 
@@ -449,15 +527,34 @@ class Material {
 	private Image slicedSoupImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/soup02.png"))
 			.getImage();
 
-	public int x, y; // 생성 위치
+	private int x, y; // 생성 위치
+	private int width, height;
 	public String matType; // 어떤 재료인지
 	private int xSpeed, ySpeed;
+
+	public int getWidth() {
+		return width;
+	}
+
+	public int getHeight() {
+		return height;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
 
 	// ⭐️ 목표 도착 시간 (정답 타이밍)
 	private long targetArriveTime;
 
 	// ⭐️ 실제 움직임을 시작해야 할 게임 시간 (핵심 필드)
 	public long actualDropStartTime;
+
+	public double rotationAngle = 0; // ⭐️ 회전 각도 (라디안 또는 도)
 
 	public Material(int x, int y, String matType, int xSpeed, int ySpeed, long targetArriveTime, long dropStartTime) {
 		this.x = x; // 생성 좌표
@@ -473,28 +570,68 @@ class Material {
 		switch (matType) {
 		case "chili":
 			g.drawImage(chiliImage, x, y, 100, 200, null);
+			width = 100;
+			height = 200;
 			break;
 		case "egg":
 			g.drawImage(eggImage, x, y, 212, 192, null);
+			width = 212;
+			height = 192;
 			break;
 		case "mushroom":
 			g.drawImage(mushroomImage, x, y, 150, 100, null);
+			width = 150;
+			height = 100;
 			break;
 		case "welshonion1":
 			g.drawImage(welshonion1Image, x, y, 100, 100, null);
+			width = 100;
+			height = 100;
 			break;
 		case "welshonion2":
 			g.drawImage(welshonion2Image, x, y, 100, 100, null);
+			width = 100;
+			height = 100;
 			break;
 		case "soup":
 			g.drawImage(soupImage, x, y, 220, 271, null);
+			width = 220;
+			height = 271;
 			break;
+		}
+
+		if (SpaceStage3.currentLaserImage != null) {
+			g.drawImage(SpaceStage3.currentLaserImage, 0, 0, null);
+			g.dispose();
 		}
 	}
 
 	public void drop() {
 		x += this.xSpeed;
 		y += this.ySpeed;
+	}
+
+	public Rectangle getBounds() {
+		return new Rectangle(x, y, width, height);
+	}
+
+	// ⭐️ 회전 각도 설정 메서드
+	public void setTargetDirection(int launcherX, int launcherY) {
+		// 이미지가 중앙에서 회전한다고 가정하고, 이미지의 중심 좌표를 계산
+		int targetX = x + (width / 2);
+		int targetY = y + (height / 2);
+		
+		// 1. x, y 축 거리(차이) 계산
+	    double dx = targetX - launcherX;
+	    double dy = targetY - launcherY;
+
+	    // 2. atan2를 사용하여 라디안(Radian) 각도 계산
+	    // atan2(dy, dx)는 x, y를 고려하여 -π ~ π 범위의 각도를 정확하게 반환합니다.
+	    double angleInRadians = Math.atan2(dy, dx);
+
+	    // 3. 라디안을 도(Degree)로 변환
+	    this.rotationAngle = Math.toDegrees(angleInRadians);
+	    
 	}
 
 }

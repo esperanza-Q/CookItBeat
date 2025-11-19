@@ -8,6 +8,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -33,7 +35,10 @@ public class SpaceAnimation extends JPanel {
     // ‼️ [유지] 물총 이미지 배열만 protected로 유지 (하위 클래스 사용 목적)
     protected Image[] waterFrames;
     // ‼️ 물총 관련 Timer, Index, Image 변수 및 로직은 SpaceStage1로 이동
-
+    
+    // ✅ [추가] 레이저 이미지 배열
+    protected Image[] laserFrames;
+    
     //‼️애니메이션 버전
     private Image planets1;
     private double t = 0;
@@ -102,6 +107,12 @@ public class SpaceAnimation extends JPanel {
         waterFrames = new Image[4];
         for (int i = 0; i < 4; i++) {
             waterFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/water0" + (i + 1) + ".png")).getImage();
+        }
+        
+        // ✅ 레이저 이미지 프레임 초기화 (하위 클래스에서 사용)
+        laserFrames = new Image[2];
+        for (int i = 0; i < 2; i++) {
+            laserFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser0" + (i + 1) + ".png")).getImage();
         }
 
         // ✅ [추가] 판정 이미지 로드
@@ -213,6 +224,7 @@ public class SpaceAnimation extends JPanel {
                 }
             }
         });
+        
 
         setupAnimationTimers();
         setupJudgementTimer(); // ✅ 판정 결과 출력 타이머 초기화
