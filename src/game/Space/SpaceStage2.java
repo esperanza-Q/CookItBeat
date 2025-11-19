@@ -24,23 +24,34 @@ public class SpaceStage2 extends SpaceAnimation {
     private List<Noodle> noodles = new ArrayList<>();
     // ===================== 면발 오브젝트 클래스 =====================
     private static class Noodle {
-        float x, y;          // 위치
-        float scale = 0.5f;  // 크기
+        float x, y;
+        float scale = 0.7f;
 
         boolean visible = true;
-        boolean captured = false;   // true면 UFO로 끌려가는 상태
+        boolean captured = false;
 
         int startTime = -1;
         int captureStartTime = -1;
 
-        // 🔹 이동 속도 (px/s)
-        float vx;  // x 방향 속도
-        float vy;  // y 방향 속도
+        float vx;
+        float vy;
 
-        // 🔹 캡쳐 시작 시점의 위치를 따로 저장
         float startX;
         float startY;
+        boolean goRight;
+
+        int frameIndex = 0;
+        int lastFrameTime = -1;
+
+        // 🔹 이 면발이 담당하는 노트 구간 (USER_PRESS_TIMES_INT 기준 인덱스)
+        int firstNoteIndex;   // 포함
+        int lastNoteIndex;    // 포함
+
+        int successCount = 0; // Good/Perfect 횟수
+        boolean failed = false; // 이 턴에서 Miss 한 번이라도 나면 true
     }
+
+
 
 
 
@@ -55,8 +66,35 @@ public class SpaceStage2 extends SpaceAnimation {
     private static final int BLACKHOLE_GROW_DURATION = 1000; // 몇 ms 동안 커질지 (1초)
 
 
+    // 공기포 크기 조절 (1.0f = 원본 크기)
+    private float boomScale = 0.7f;   // 70% 크기
+
     // 53초 구간 전환 타이밍 (53.139초)
     private static final int PHASE_CHANGE_TIME_53 = 53139;  // 53.139 * 1000
+
+    // 🔹 키 가이드 고정 타이밍 (초 단위)
+    private static final double[] GUIDE_TIMES_SEC = {
+            27.0,   // 27초에 첫 가이드
+            34,   // 34초에 두 번째 가이드
+            39.7,   // ...
+
+    };
+
+    // 🔹 각 시간에 어떤 키를 보여줄지
+    private static final int[] GUIDE_KEYS = {
+            KeyEvent.VK_A,   // 27.0초에는 A 키 가이드
+            KeyEvent.VK_D,   // 34.5초에는 D 키 가이드
+            KeyEvent.VK_W,   // 40.0초에는 W 키 가이드
+
+    };
+
+    // 🔹 ms 단위로 변환 (슬로우 보정 포함해서 쓰고 싶으면 toJudgeMs 사용)
+    private static final int[] GUIDE_TIMES_MS = buildJudgeTimes(GUIDE_TIMES_SEC);
+
+    // 🔹 각 가이드가 화면에 유지될 시간 (ms)
+    private static final int GUIDE_SHOW_DURATION_MS = 2500;  // 1.5초 동안 표시
+
+
 
     private boolean phaseChangedAt53 = false;
 
@@ -72,9 +110,11 @@ public class SpaceStage2 extends SpaceAnimation {
     private int blackholeOffsetY = 100; // +면 아래, -면 위
 
     // ===================== 면발 궤도 관련 =====================
+    private static final int NOODLE_FRAME_COUNT = 4;   // 🔹 프레임 개수
 
-    // 면발 이미지 (작은 면발 조각 PNG 추천)
-    private Image noodleImage;
+    // 면발 애니메이션 프레임 (오른쪽 아래, 왼쪽 아래)
+    private Image[] noodleRightFrames = new Image[NOODLE_FRAME_COUNT];
+    private Image[] noodleLeftFrames  = new Image[NOODLE_FRAME_COUNT];
 
     // 현재 면발 위치
     private float noodleX;
@@ -87,6 +127,14 @@ public class SpaceStage2 extends SpaceAnimation {
     // 상태
     private boolean noodleVisible = true;
     private boolean noodleCaptured = false;    // UFO에 끌려가는 중인지
+
+
+    // 면발 생성 한 번만 실행하기 위한 플래그
+    private boolean noodleSpawn1 = false;
+    private boolean noodleSpawn2 = false;
+    private boolean noodleSpawn3 = false;
+    private boolean noodleSpawn4 = false;
+
 
     // UFO(라면 그릇 / 블랙홀) 목표 위치
 // 나중에 화면 보면서 숫자 조정하면 됨
@@ -124,6 +172,12 @@ public class SpaceStage2 extends SpaceAnimation {
         }
         return nearestIdx;
     }
+
+    // 🔹 현재 시간 t 기준으로 근처 노트 인덱스만 가져오기
+    private int getNearestNoteIndexForNow(int windowMs) {
+        return getNearestNoteIndex(currentMusicTimeMs, windowMs);
+    }
+
 
 
 
@@ -176,7 +230,7 @@ public class SpaceStage2 extends SpaceAnimation {
     private static int[] buildJudgeTimes(double[] secs) {
         int[] result = new int[secs.length];
         for (int i = 0; i < secs.length; i++) {
-            result[i] = toJudgeMs(secs[i]);
+            result[i] = toJudgeMs(secs[i]);  // ← 여기서 슬로우/밀림을 반영
         }
         return result;
     }
@@ -231,14 +285,13 @@ public class SpaceStage2 extends SpaceAnimation {
     private final int ALIEN_APPEAR_TIME_8 = 47 * 1000;   // 0:47
 
     // 외계인 손 자동 동작 타이밍
+    //외계인이 자동으로 “눌렀다”고 연출되는 시
     private static final double[] ALIEN_PRESS_TIMES_SEC = {
             28.285, 28.505, 28.725,
             31.280, 31.720,
             35.146, 35.366, 35.576,
             35.577,
-            41.793, 42.002,
-            43.282, 43.502, 43.722, 43.942,
-            45.435, 45.859, 46.283
+            41.793, 42.002, 43.282, 43.502, 43.722, 43.942, 45.435, 45.859, 46.283
     };
 
     private final int[] ALIEN_PRESS_TIMES_INT = buildJudgeTimes(ALIEN_PRESS_TIMES_SEC);
@@ -261,6 +314,10 @@ public class SpaceStage2 extends SpaceAnimation {
 
     // ✅ 실제 판정에 쓰는 ms 배열 (슬로우 보정 적용된 값)
     private static final int[] USER_PRESS_TIMES_INT = buildJudgeTimes(USER_PRESS_TIMES_SEC);
+
+    // ✅ 실제 플레이가 시작되는 시간(ms) — 29.983초부터 판정 허용
+    private static final int INPUT_ENABLE_TIME_MS = USER_PRESS_TIMES_INT[0] - 50;
+// (약간 여유 주고 싶으면 -50, 딱 맞추고 싶으면 그대로 USER_PRESS_TIMES_INT[3])
 
 
     // 딴 패턴이 시작하는 시점(첫 딴 타이밍, 초 단위)
@@ -288,7 +345,7 @@ public class SpaceStage2 extends SpaceAnimation {
             KeyEvent.VK_A, KeyEvent.VK_A,
 
             // 33.410, 33.850
-            KeyEvent.VK_D, KeyEvent.VK_D,
+            KeyEvent.VK_A, KeyEvent.VK_A,
 
             // 35.146, 35.366, 35.576
             KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,
@@ -346,8 +403,25 @@ public class SpaceStage2 extends SpaceAnimation {
 
         stage2Banner = new ImageIcon(Main.class.getResource("../images/alienStage_image/space_stage2.png")).getImage();
 
-        // 🔸 면발 이미지 로드
-        noodleImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/noodle02.png")).getImage();
+        // 🔸 면발 애니메이션 이미지 로드 (R1~R4, L1~L4)
+        for (int i = 0; i < NOODLE_FRAME_COUNT; i++) {
+            var urlR = Main.class.getResource("../images/alienStage_image/noodle_R" + (i + 1) + ".png");
+            var urlL = Main.class.getResource("../images/alienStage_image/noodle_L" + (i + 1) + ".png");
+
+            if (urlR == null) {
+                System.err.println("noodle_R" + (i + 1) + ".png 못 찾음");
+            } else {
+                noodleRightFrames[i] = new ImageIcon(urlR).getImage();
+            }
+
+            if (urlL == null) {
+                System.err.println("noodle_L" + (i + 1) + ".png 못 찾음");
+            } else {
+                noodleLeftFrames[i] = new ImageIcon(urlL).getImage();
+            }
+        }
+
+
 
         // ✅ 키 힌트 이미지 로드
         keyAImage = new ImageIcon(Main.class.getResource("../images/mainUI/key_A.png")).getImage();
@@ -379,41 +453,72 @@ public class SpaceStage2 extends SpaceAnimation {
                 boolean fireLeft = false;
                 boolean fireRight = false;
 
-                // 🔊 효과음 재생은 "유효한 키(WASD)"일 때만 실행
+                // 🔊 효과음 + 공기포 방향
                 switch (code) {
-                    case KeyEvent.VK_A:        // A: 왼쪽만
-                        playShotSfx();         // ← 효과음
+                    case KeyEvent.VK_A:
+                        playShotSfx();
                         fireLeft = true;
                         break;
-                    case KeyEvent.VK_D:        // D: 오른쪽만
-                        playShotSfx();         // ← 효과음
+                    case KeyEvent.VK_D:
+                        playShotSfx();
                         fireRight = true;
                         break;
-                    case KeyEvent.VK_W:        // W: 양쪽
-                    case KeyEvent.VK_S:        // S: 양쪽
-                        playShotSfx();         // ← 효과음
+                    case KeyEvent.VK_W:
+                    case KeyEvent.VK_S:
+                        playShotSfx();
                         fireLeft = true;
                         fireRight = true;
                         break;
                     default:
-                        // WASD 아닌 키는 공기포도, 소리도, 판정도 안 함
-                        return;
+                        return; // WASD 아니면 무시
                 }
 
-                // ✅ 여기서 cat1 → cat2 로 변경 (Stage1과 동일한 로직 재사용)
                 changeStageImageOnPress();
                 repaint();
 
-                // 1) 공기포 이펙트 먼저 발사
                 startBoomAnimation(fireLeft, fireRight);
 
-                // 2) 판정(점수)은 "정답 키 + 정답 타이밍"일 때만
-                if (!isCorrectKeyForCurrentTime(code)) {
+                // ================== 여기부터 "정답 키 기반" 판정 로직 ==================
+
+                // 1) 아직 입력 허용 시간 전이면: 그냥 MISS 처리
+                if (currentMusicTimeMs < INPUT_ENABLE_TIME_MS) {
+                    registerMissFromStage2(-1);   // 리듬/면발 쪽 MISS 처리 (점수 시스템에 맞게 구현)
                     return;
                 }
 
-                // 3) 정답일 때만 판정 로직 실행
-                triggerJudgeAndBoomFromStage2();
+                // 2) 지금 시간 근처에서 "제일 가까운 노트 인덱스" 찾기
+                int noteIdx = getNearestNoteIndexForNow(NOTE_SEARCH_WINDOW_MS);
+                if (noteIdx == -1) {
+                    // 근처에 어떤 노트도 없으면 MISS
+                    registerMissFromStage2(-1);
+                    return;
+                }
+
+                // 3) 이 시간대의 "정답 키" 가져오기
+                int expectedKey = NOTE_KEYS[noteIdx];   // 💡 미리 정해둔 정답 키 배열
+
+                // 4) 눌린 키(code)가 정답 키가 아니면 → **무조건 오답(MISS)**
+                if (code != expectedKey) {
+                    registerMissFromStage2(noteIdx);    // 이 노트를 담당하는 면발 턴도 실패 처리
+                    return;
+                }
+
+                // 5) 여기까지 왔다는 건 "정답 키를 눌렀다"는 뜻 → 시간 차로 최종 판정
+                int noteTime = USER_PRESS_TIMES_INT[noteIdx];
+                int diff = Math.abs(currentMusicTimeMs - noteTime);
+
+                if (diff <= JUDGE_GOOD_MS) {
+                    // ✅ 정답 키 + 시간도 범위 안 → 성공
+
+                    // 리듬 시스템(Perfect/Good/Miss 텍스트, 점수, 콤보)은 여기서만 호출
+                    SpaceStage2.super.processSpaceKeyPressLogic();
+
+                    // 면발 턴 성공 처리 (모든 노트 성공 시 UFO로 끌려가게)
+                    registerHitToNoodleTurn(noteIdx);
+                } else {
+                    // 정답 키를 눌렀지만, 시간 차이가 너무 크면 → MISS
+                    registerMissFromStage2(noteIdx);
+                }
             }
 
             @Override
@@ -434,18 +539,50 @@ public class SpaceStage2 extends SpaceAnimation {
 
 
 
+
     }
 
 
     // ✅ 현재 음악 시간 근처의 노트에 대해, keyCode가 정답인지 확인
     private boolean isCorrectKeyForCurrentTime(int keyCode) {
-        final int ALLOW_WINDOW_MS = 300; // 판정 윈도우
+        if (currentMusicTimeMs < INPUT_ENABLE_TIME_MS) return false;
 
-        int idx = getNearestNoteIndex(currentMusicTimeMs, ALLOW_WINDOW_MS);
-        if (idx == -1) return false;
+        final int LARGE_WINDOW_MS = 1500;
 
-        return keyCode == NOTE_KEYS[idx];
+        int idx = getNearestNoteIndex(currentMusicTimeMs, LARGE_WINDOW_MS);
+        if (idx == -1) {
+            return false;
+        }
+
+        int noteTime = USER_PRESS_TIMES_INT[idx];
+        int expectedKey = NOTE_KEYS[idx];
+
+        return keyCode == expectedKey;
     }
+
+
+    // 🔻 Stage2 에서 오답일 때 강제 MISS + 턴 실패
+    private void registerMissFromStage2(int noteIndex) {
+        // 1) 점수/콤보 Miss 반영 (SpaceAnimation 또는 RhythmJudgementManager에 맞춰서 작성)
+        // ex) super.registerMissFromChild(); 또는 RhythmJudgementManager.registerMiss(...);
+
+        // 2) 이 노트를 담당하는 면발 턴을 실패로 표시
+        if (noteIndex < 0) return;
+
+        for (Noodle n : noodles) {
+            if (!n.visible) continue;
+            if (n.captured) continue;
+            if (n.failed) continue;
+
+            if (noteIndex >= n.firstNoteIndex && noteIndex <= n.lastNoteIndex) {
+                n.failed = true;
+                // 실패한 면발은 그냥 계속 떨어지게 둘지, 바로 사라지게 할지 선택
+                // 예: n.visible = false; 하면 바로 사라짐
+                break;
+            }
+        }
+    }
+
 
 
 
@@ -456,7 +593,20 @@ public class SpaceStage2 extends SpaceAnimation {
         blackholeScale = 0.09f;  // 처음에는 작게
     }
 
-    private void spawnNoodle(int currentTime) {
+    private static final float NOODLE_SPEED_X = 40f;  // 좌우 속도
+    private static final float NOODLE_SPEED_Y = 60f;  // 아래로 속도
+    private static final int   NOODLE_FRAME_DELAY_MS = 300; // 프레임 전환 간격
+
+
+    // 🔹 근처 노트를 찾을 시간 범위 (±500ms 안에 있는 노트만 대상으로)
+    private static final int NOTE_SEARCH_WINDOW_MS = 500;
+
+    // 🔹 이 안에 들어오면 "성공"으로 볼 시간 범위 (원하는 대로 조절)
+    private static final int JUDGE_GOOD_MS = 150;   // ±150ms
+
+
+    // 🔵 수정된 spawnNoodle
+    private void spawnNoodle(int currentTime, boolean goRight, int firstNoteIdx, int lastNoteIdx) {
         if (blackholeGif == null) return;
 
         int originalW = blackholeGif.getIconWidth();
@@ -468,60 +618,73 @@ public class SpaceStage2 extends SpaceAnimation {
         int baseX = getWidth() / 2 - 370;
         int baseY = getHeight() / 2 - 270;
 
-        int centerX = baseX + blackholeOffsetX;
-        int centerY = baseY + blackholeOffsetY;
+        int x = baseX - drawW / 2 + blackholeOffsetX;
+        int y = baseY - drawH / 2 + blackholeOffsetY;
+
+        int centerX = x + drawW / 2 + 400;
+        int centerY = y + drawH / 2 + 80;
 
         Noodle n = new Noodle();
         n.x = centerX;
         n.y = centerY;
         n.startTime = currentTime;
+        n.goRight = goRight;
+        n.vx = 0f;
+        n.vy = NOODLE_SPEED_Y;
 
-        // 🔹 대각선 방향 설정
-        float speed = 250f;          // 전체 속도 (원하면 나중에 조절)
-        boolean goRight = Math.random() < 0.5;  // true면 ↘, false면 ↙
+        n.frameIndex = 0;
+        n.lastFrameTime = currentTime;
 
-        n.vy = speed * 0.9f;         // 아래로 (y+ 방향)
-        if (goRight) {
-            n.vx = speed;            // 오른쪽 아래 ↘
-        } else {
-            n.vx = -speed;           // 왼쪽 아래 ↙
-        }
+        // 🔹 이 면발이 어떤 노트들을 담당하는지 저장
+        n.firstNoteIndex = firstNoteIdx;
+        n.lastNoteIndex = lastNoteIdx;
 
         noodles.add(n);
     }
 
 
-    // ✅ 현재 음악 시간 기준으로 "다음에 눌러야 할 키" 힌트 업데이트
-    // ✅ 현재 음악 시간 기준으로 "지금 눌러야 할 키" 힌트 업데이트
+
+
+    // ✅ 현재 음악 시간 t 기준으로 "고정된 타이밍"에 키 가이드 표시
     private void updateKeyGuideByTime(int t) {
+        // 53초 이후에는 가이드 안보이게
         if (phaseChangedAt53) {
             currentKeyGuideImage = null;
             return;
         }
 
-        // 힌트는 판정보다 살짝 넓게(예: ±600ms) 잡아도 됨
-        final int HINT_WINDOW_MS = 600;
+        // 기본값: 안 보이게
+        currentKeyGuideImage = null;
 
-        int idx = getNearestNoteIndex(t, HINT_WINDOW_MS);
-        if (idx == -1) {
-            currentKeyGuideImage = null;
-            return;
-        }
+        // 원하는 경우: 아예 전체 데모 구간에도 가이드 띄우고 싶으면 이 if 제거해도 됨
+        // if (t < INPUT_ENABLE_TIME_MS) {
+        //     return;
+        // }
 
-        int keyCode = NOTE_KEYS[idx];
+        for (int i = 0; i < GUIDE_TIMES_MS.length; i++) {
+            int start = GUIDE_TIMES_MS[i];
+            int end   = start + GUIDE_SHOW_DURATION_MS;
 
-        switch (keyCode) {
-            case KeyEvent.VK_A:
-                currentKeyGuideImage = keyAImage;
-                break;
-            case KeyEvent.VK_D:
-                currentKeyGuideImage = keyDImage;
-                break;
-            case KeyEvent.VK_W:
-                currentKeyGuideImage = keyWImage;
-                break;
-            default:
-                currentKeyGuideImage = null;
+            // t가 이 구간 안에 들어오면 해당 가이드를 보여줌
+            if (t >= start && t <= end) {
+                int keyCode = GUIDE_KEYS[i];
+
+                switch (keyCode) {
+                    case KeyEvent.VK_A:
+                        currentKeyGuideImage = keyAImage;
+                        break;
+                    case KeyEvent.VK_D:
+                        currentKeyGuideImage = keyDImage;
+                        break;
+                    case KeyEvent.VK_W:
+                        currentKeyGuideImage = keyWImage;
+                        break;
+                    default:
+                        currentKeyGuideImage = null;
+                }
+                // 같은 시간에 여러 개 겹치는 일 없다고 보면 바로 return 해도 됨
+                return;
+            }
         }
     }
 
@@ -613,14 +776,38 @@ public class SpaceStage2 extends SpaceAnimation {
         // Stage2에서는 Boom을 WASD 키 리스너에서만 처리
     }
 
-    // ✅ Stage2용: 정답 키일 때만 부모의 판정 + Boom 로직 실행
-    private void triggerJudgeAndBoomFromStage2() {
-        // 부모(SpaceAnimation)의 원본 로직 실행 (점수, 판정 처리)
+    // ✅ Stage2용: 정답 키일 때만 부모 판정 + 턴 체크
+    private void triggerJudgeAndBoomFromStage2(int noteIndex) {
+        // 부모(SpaceAnimation)의 판정/점수 처리
         SpaceStage2.super.processSpaceKeyPressLogic();
 
-        // 가장 가까운 면발 하나를 캡처
-        captureNearestNoodle();
+        // 🔹 이 판정이 속한 면발 턴에 “성공 한 개” 추가
+        registerHitToNoodleTurn(noteIndex);
     }
+
+    // 이 노트를 담당하는 면발을 찾아서 성공 카운트 올리고,
+    // 턴 전체가 다 성공하면 그제서야 captured = true
+    private void registerHitToNoodleTurn(int noteIndex) {
+        if (noteIndex < 0) return;
+
+        for (Noodle n : noodles) {
+            if (!n.visible) continue;
+            if (n.captured) continue;
+            if (n.failed) continue;
+
+            if (noteIndex >= n.firstNoteIndex && noteIndex <= n.lastNoteIndex) {
+                n.successCount++;
+
+                int required = n.lastNoteIndex - n.firstNoteIndex + 1;
+                if (n.successCount >= required) {
+                    // 🔥 이 턴의 모든 노트를 Good/Perfect로 맞췄다고 보고 UFO로 이동 시작
+                    n.captured = true;
+                }
+                break;
+            }
+        }
+    }
+
 
     // 면발 캡쳐 시작
     private void captureNearestNoodle() {
@@ -700,11 +887,34 @@ public class SpaceStage2 extends SpaceAnimation {
             }
         }
 
-        // ===== 면발 생성 =====
-        // 예시: 30초, 32초, 34초에 면발 생성
-        if (t >= 30000 && t < 30000 + 30) spawnNoodle(t);
-        if (t >= 32000 && t < 32000 + 30) spawnNoodle(t);
-        if (t >= 34000 && t < 34000 + 30) spawnNoodle(t);
+        // ===== 면발 생성  타이밍 =====
+        // 외계인 예시에는 안생기고 내 박자에만 생성
+        // 29.000초 근처에서 한 번만
+        if (!noodleSpawn1 && t >= 29000) {
+            spawnNoodle(t, false, 0, 2);
+            noodleSpawn1 = true;
+        }
+
+        // 32.000초 근처에서 한 번만
+        if (!noodleSpawn2 && t >= 32000) {
+            spawnNoodle(t, false, 3, 5);
+            noodleSpawn2 = true;
+        }
+
+        // 36.800초 근처에서 한 번만 (예: 10~12번 노트 담당 이런 식)
+        if (!noodleSpawn3 && t >= 36800) {
+            spawnNoodle(t, true, 10, 12);
+            noodleSpawn3 = true;
+        }
+
+
+        // 48.000초 근처에서 한 번만 (오른쪽/왼쪽에 각각 다른 범위)
+        if (!noodleSpawn4 && t >= 48000) {
+            spawnNoodle(t, false, 16, 17);  // 예: 첫 면발
+            spawnNoodle(t, true, 18, 22); // 예: 두 번째 면발
+            noodleSpawn4 = true;
+        }
+
 
         // ===== 프레임 간 시간 계산 (ms) =====
         int dt = 0;
@@ -715,7 +925,7 @@ public class SpaceStage2 extends SpaceAnimation {
             lastUpdateTimeMs = t;
         }
 
-        // ===================== 면발 이동 로직 =====================
+        // ===================== 면발 이동 + 프레임 애니메이션 =====================
         if (dt > 0) {
             float dtSec = dt / 1000f;
 
@@ -724,9 +934,18 @@ public class SpaceStage2 extends SpaceAnimation {
                 if (!n.visible) continue;
 
                 if (!n.captured) {
-                    // 🔹 캡처되지 않은 상태: 블랙홀에서 대각선으로 날아감
+                    // 🔹 캡처되지 않은 상태: 방향대로 직선 이동
                     n.x += n.vx * dtSec;
                     n.y += n.vy * dtSec;
+
+                    // 🔹 프레임 애니메이션 (R1→R2→R3, L1→L2→L3)
+                    if (n.lastFrameTime < 0) {
+                        n.lastFrameTime = t;
+                    }
+                    if (t - n.lastFrameTime >= NOODLE_FRAME_DELAY_MS) {
+                        n.frameIndex = (n.frameIndex + 1) % NOODLE_FRAME_COUNT;
+                        n.lastFrameTime = t;
+                    }
 
                     // 화면 밖으로 나가면 제거
                     int margin = 100;
@@ -735,50 +954,37 @@ public class SpaceStage2 extends SpaceAnimation {
                     }
 
                 } else {
-                    // 🔹 캡쳐된 상태: UFO 쪽으로 빨려들어가는 애니메이션
-
-                    // 💡 최초 1번만 캡쳐 시작 시간 + 시작 위치를 저장
+                    // 🔹 캡쳐된 상태: UFO 쪽으로 빨려들어가는 애니메이션 (기존 곡선 로직 유지)
                     if (n.captureStartTime < 0) {
                         n.captureStartTime = t;
-                        n.startX = n.x;   // 출발점 고정
+                        n.startX = n.x;
                         n.startY = n.y;
                     }
 
                     int elapsed = t - n.captureStartTime;
-                    // 전체 이동 시간 (ms)
                     float duration = 700f;
-
-                    // 0 ~ 1 사이 진행도
                     float rawP = Math.min(1f, elapsed / duration);
+                    float p = rawP * rawP * rawP;
 
-                    // 이징 적용 (처음엔 천천히, 나중에 빠르게 → 더 자연스러움)
-                    float p = rawP * rawP * rawP; // p^3 사용 (원하면 p^2로 바꿔도 됨)
-
-                    // 🎯 출발점: 캡쳐 시점 위치
                     float p0x = n.startX;
                     float p0y = n.startY;
-
-                    // 🎯 도착점: UFO / 라면 그릇 위치
                     float p2x = ufoTargetX;
                     float p2y = ufoTargetY;
-
-                    // 🎯 중간 제어점: 살짝 위로 휘어 들어가게
                     float p1x = (p0x + p2x) / 2f;
-                    float p1y = Math.min(p0y, p2y) - 120;  // 곡선 튀는 정도 조절
+                    float p1y = Math.min(p0y, p2y) - 120;
 
                     float u = 1f - p;
 
-                    // ✔ 부드러운 2차(또는 3차) 곡선 경로
                     n.x = u * u * p0x + 2 * u * p * p1x + p * p * p2x;
                     n.y = u * u * p0y + 2 * u * p * p1y + p * p * p2y;
 
-                    // 도착 후 안 보이게
                     if (p >= 1f) {
                         n.visible = false;
                     }
                 }
             }
         }
+
 
 
 
@@ -848,42 +1054,49 @@ public class SpaceStage2 extends SpaceAnimation {
 
         // 공기포 - 왼쪽
         if (boomLeftImage != null) {
-            int imgW = boomLeftImage.getWidth(this);
-            int imgH = boomLeftImage.getHeight(this);
+            int origW = boomLeftImage.getWidth(this);
+            int origH = boomLeftImage.getHeight(this);
+
+            // 🔹 스케일 적용된 크기
+            int drawW = (int) (origW * boomScale);
+            int drawH = (int) (origH * boomScale);
 
             // 예시: 화면 중앙 기준 왼쪽
-            int x = getWidth() / 2 - imgW + 485 ;
-            int y = getHeight() / 2 - imgH / 2 - 50;
+            int x = getWidth() / 2 - drawW + 260 ;
+            int y = getHeight() / 2 - drawH / 2 + 30 ;
 
-            g.drawImage(boomLeftImage, x, y, imgW, imgH, this);
+            g.drawImage(boomLeftImage, x, y, drawW, drawH, this);
         }
 
         // 공기포 - 오른쪽
         if (boomRightImage != null) {
-            int imgW = boomRightImage.getWidth(this);
-            int imgH = boomRightImage.getHeight(this);
+            int origW = boomRightImage.getWidth(this);
+            int origH = boomRightImage.getHeight(this);
 
-            // 예시: 화면 중앙 기준 오른쪽
-            int x = getWidth() /2 - 485 ;
-            int y = getHeight() / 2 - imgH / 2 - 50;
+            int drawW = (int) (origW * boomScale);
+            int drawH = (int) (origH * boomScale);
 
-            g.drawImage(boomRightImage, x, y, imgW, imgH, this);
+            int x = getWidth() / 2  - 270 ;
+            int y = getHeight() / 2 - drawH / 2 + 30  ;
+
+            g.drawImage(boomRightImage, x, y, drawW, drawH, this);
         }
+
 
         // ✅ 4. 키 힌트 이미지 (화면 오른쪽 아래에 예시로 표시)
         if (currentKeyGuideImage != null) {
             Graphics2D g2 = (Graphics2D) g.create();
 
-            float alpha = 0.7f; // 0.0 = 완전 투명, 1.0 = 불투명
+            float alpha = 0.65f; // 0.0 = 완전 투명, 1.0 = 불투명
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 
-            float scale = 0.3f; // 30% 크기로 줄이기 (원하면 0.2, 0.4 등 조절)
+            float scale = 0.18f; // 30% 크기로 줄이기 (원하면 0.2, 0.4 등 조절)
             int w = (int)(currentKeyGuideImage.getWidth(this) * scale);
             int h = (int)(currentKeyGuideImage.getHeight(this) * scale);
 
             int padding = 40;
-            int x = getWidth() - w - padding;
-            int y = getHeight() - h - padding;
+            int x = getWidth() - w - padding - 550;
+            int y = getHeight() - h - padding - 150;
 
             g2.drawImage(currentKeyGuideImage, x, y, w, h, this);
 
@@ -898,36 +1111,30 @@ public class SpaceStage2 extends SpaceAnimation {
 
     @Override
     protected void drawStageObjectsUnderController(Graphics g) {
-        // 🔹 컨트롤러 아래 레이어에 그릴 오브젝트: 면발만
-        //    (블랙홀도 아래로 내리고 싶으면 여기로 옮겨도 됨)
-
+        // 1) 면발 먼저 그리기
         for (Noodle n : noodles) {
             if (!n.visible) continue;
 
-            int w = (int)(noodleImage.getWidth(this) * n.scale);
-            int h = (int)(noodleImage.getHeight(this) * n.scale);
+            Image[] frames = n.goRight ? noodleRightFrames : noodleLeftFrames;
+            Image frame = frames[n.frameIndex];
 
-            // 중심 기준 회전을 위해 (0,0)을 면발 중심으로 맞춰서 그릴 것
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                // 🔹 면발 중심으로 이동
-                g2.translate(n.x, n.y);
+            int w = (int)(frame.getWidth(this) * n.scale);
+            int h = (int)(frame.getHeight(this) * n.scale);
 
-                // 🔹 45도 회전 (시계 방향). 반대로 기울이고 싶으면 -45로 바꿔도 됨
-                g2.rotate(Math.toRadians(45));
+            g.drawImage(frame, (int)(n.x - w / 2), (int)(n.y - h / 2), w, h, this);
+        }
 
-                // 🔹 중심 기준으로 이미지 그리기
-                g2.drawImage(noodleImage, -w / 2, -h / 2, w, h, this);
-            } finally {
-                g2.dispose();
-            }
+        // 2) 그 위에 cannon 직접 그리기 (여기서부터는 Stage2 전용)
+        if (cannon != null) {
+            g.drawImage(cannon, 0, 0, null);
         }
     }
 
 
     @Override
     public Image getCannon() {
-        return cannon;
+        // Stage2에서는 부모가 cannon을 그리지 않도록 막기
+        return null;
     }
 
     @Override

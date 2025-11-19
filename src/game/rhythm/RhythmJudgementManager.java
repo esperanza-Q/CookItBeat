@@ -109,6 +109,11 @@ public class RhythmJudgementManager {
         }
     }
 
+    // ✅ 추가
+    public void setScore(int score) {
+        this.score = score;
+    }
+
     // ✅ Getter 메서드 (SpaceAnimation에서 화면 표시 및 상태 확인을 위해 사용)
     public int getScore() { return score; }
     public String getLastJudgement() { return lastJudgement; }
