@@ -57,6 +57,10 @@ public class SpacePanel extends JPanel {
         // **매우 중요:** 전환된 새 패널(Stage2)에 포커스를 주고 애니메이션을 시작
         SpaceAnimation nextStage = (SpaceAnimation) getComponent(1); // Stage2를 가져옴
         currentStage = nextStage; // 참조 업데이트
+
+        // ✅ 여기 추가: Stage1에서 쌓인 totalScore를 Stage2로 동기화
+        nextStage.syncScoreFromManager();
+
         StageManager.setCurrentStage(nextStage); // StageManager에 새 스테이지 등록 (음악 시간 동기화 계속)
 
         SwingUtilities.invokeLater(() -> nextStage.requestFocusInWindow());
@@ -70,6 +74,10 @@ public class SpacePanel extends JPanel {
         // **매우 중요:** 전환된 새 패널(Stage2)에 포커스를 주고 애니메이션을 시작
         SpaceAnimation nextStage = (SpaceAnimation) getComponent(2); // Stage2를 가져옴
         currentStage = nextStage; // 참조 업데이트
+
+        // ✅ 여기 추가
+        nextStage.syncScoreFromManager();
+
         StageManager.setCurrentStage(nextStage); // StageManager에 새 스테이지 등록 (음악 시간 동기화 계속)
 
         SwingUtilities.invokeLater(() -> nextStage.requestFocusInWindow());

@@ -125,7 +125,7 @@ public class SpaceStage3 extends SpaceAnimation {
         cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon02.png")).getImage();
         
         // 이미지 교체 예정
-        stage3Banner = new ImageIcon(Main.class.getResource("../images/alienStage_image/space_stage2.png")).getImage();
+        stage3Banner = new ImageIcon(Main.class.getResource("../images/alienStage_image/space_stage3.png")).getImage();
         
         // ‼️ currentUser는 cat1으로 고정 (사용자가 SpaceBar 누를 때만 cat2로 변경)
         currentUser = cat1;
@@ -209,7 +209,7 @@ public class SpaceStage3 extends SpaceAnimation {
 
     @Override
     public void drawStageObjects(Graphics g) {
-    	System.out.println("✅ drawStageObjects 호출됨!");
+    	// System.out.println("✅ drawStageObjects 호출됨!");
         // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
         g.drawImage(currentUser, 0, 0, null);
         
@@ -249,7 +249,7 @@ public class SpaceStage3 extends SpaceAnimation {
         */
         
         if (matList != null) {
-            System.out.println("현재 matList 크기: " + matList.size());
+            // System.out.println("현재 matList 크기: " + matList.size());
         } else {
             System.out.println("⚠️ 오류: matList가 null입니다.");
         }

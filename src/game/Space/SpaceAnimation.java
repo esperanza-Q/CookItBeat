@@ -239,6 +239,20 @@ public class SpaceAnimation extends JPanel {
     }
 
 
+    // ✅ 새 메서드: StageManager의 totalScore를 이 스테이지에 반영
+    public void syncScoreFromManager() {
+        int total = StageManager.getTotalScore();
+
+        // 이 스테이지가 기준으로 삼을 오프셋
+        this.scoreOffset = total;
+        this.currentScore = total;
+
+        // 판정 매니저가 관리하는 점수도 전체 점수로 맞춰 줌
+        if (judgementManager != null) {
+            judgementManager.setScore(total);
+        }
+    }
+
     // ✅ [추가] 판정 결과 출력 타이머 초기화
     private void setupJudgementTimer() {
         judgementTimer = new Timer(JUDGEMENT_DISPLAY_TIME_MS, e -> {
@@ -473,15 +487,10 @@ public class SpaceAnimation extends JPanel {
             }
         }
 
-        // ✅ [수정] 현재 점수 갱신 및 StageManager에 저장
+        // ✅ [수정 22] judgementManager가 관리하는 점수를 "전체 점수"로 사용
         if (judgementManager != null) {
-            int currentStageScore = judgementManager.getScore();
-
-            // ‼️ [수정] 이월된 점수 + 현재 스테이지 점수를 합산하여 전체 점수를 StageManager에 저장합니다.
-            int totalGameScore = this.scoreOffset + currentStageScore;
+            int totalGameScore = judgementManager.getScore();
             StageManager.setTotalScore(totalGameScore);
-
-            // ‼️ [추가] 로컬 currentScore 변수를 갱신하여 paintComponent에서 올바른 점수를 그리도록 합니다.
             this.currentScore = totalGameScore;
         }
 
