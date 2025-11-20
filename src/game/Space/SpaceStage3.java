@@ -253,7 +253,7 @@ public class SpaceStage3 extends SpaceAnimation {
 			laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser02.png")).getImage();
 
 			cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon01_M.png")).getImage();
-			System.out.println("Laser Direction: Center (1, 2)");
+			//System.out.println("Laser Direction: Center (1, 2)");
 		}
 	}
 
