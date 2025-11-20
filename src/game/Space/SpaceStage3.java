@@ -1,6 +1,7 @@
 package game.Space;
 
 import game.Main;
+import game.Music;
 import game.rhythm.RhythmJudgementManager;
 
 import javax.swing.*;
@@ -64,7 +65,16 @@ public class SpaceStage3 extends SpaceAnimation {
 	private Timer laserAnimationTimer;
 	private int laserFrameIndex = 0;
 	private final int LASER_ANIMATION_DELAY = 50; // 레이저 이미지 전환 속도 (ms)
-	
+
+	// ✅ [추가] 폭발 애니메이션 관련 변수
+	private Timer boomAnimationTimer;
+	private int boomFrameIndex = 0;
+	private Image currentBoomImage; // 현재 폭발 프레임 이미지
+	private final int BOOM_ANIMATION_DELAY = 150; // 예시 딜레이 (ms)
+	// 공기포 크기 조절 (1.0f = 원본 크기)
+	private float boomScale = 1.8f;   // 70% 크기
+	private int boomDrawX = -1;
+	private int boomDrawY = -1;
 
 	// 이벤트 발동 여부
 	private boolean event1Triggered = false;
@@ -154,6 +164,8 @@ public class SpaceStage3 extends SpaceAnimation {
 		
 		// ✅ [추가] 물총 애니메이션 타이머 설정
 		setupLaserAnimationTimer();
+
+		setupBoomAnimationTimer();
 		
 		
 		// ✅ [추가] 스테이지3 이벤트 처리
@@ -164,13 +176,16 @@ public class SpaceStage3 extends SpaceAnimation {
         	    int clickY = e.getY();
         	    
         	    int materialIndex = -1;
-        	    
+
+
         	    // 충돌 판정 루프
         	    for (int i = 0; i < matList.size(); i++) {
         	    	Material mat = matList.get(i);
         	    	
         	        if (mat.getBounds().contains(clickX, clickY)) {
         	        	//materialIndex = i; // ⭐️ 클릭된 재료의 인덱스 저장 -> 클릭 좌표 기반 이미지 설정으로 수정
+
+						Music.playEffect("laser02.mp3");
 
 						processSpaceKeyPressLogic(); // 판정 로직
 
@@ -179,7 +194,18 @@ public class SpaceStage3 extends SpaceAnimation {
                         
         	            // ⭐️ 타이머 시작 요청 -> 레이저 발사
         	            startLaserAnimation();
-        	            
+
+						if (currentJudgementText != null && !currentJudgementText.equals("MISS")) {
+							boomDrawX = clickX;
+							boomDrawY = clickY;
+
+							// ⭐️ 재료 이미지 없어지게 함 (리스트에서 제거)
+							matList.remove(i);
+
+							// ⭐️ 폭발 애니메이션 시작
+							startBoomAnimation(); // <-- 이름 변경 적용
+						}
+
         	            // 한 번에 하나만 처리
         	            break;
         	        }
@@ -187,7 +213,7 @@ public class SpaceStage3 extends SpaceAnimation {
         	    repaint();
         	}
         });
-        
+
 		// 1. 10ms 간격으로 타이머 설정
 		gameTimer = new Timer(SLEEP_TIME, e -> {
 			// 2. 타이머 틱마다 모든 재료의 좌표를 업데이트
@@ -286,6 +312,30 @@ public class SpaceStage3 extends SpaceAnimation {
         repaint();
     }
 
+	private void setupBoomAnimationTimer() {
+		boomAnimationTimer = new Timer(BOOM_ANIMATION_DELAY, e -> {
+			boomFrameIndex++;
+			if (boomFrameIndex < BoomFrames.length) {
+				currentBoomImage = BoomFrames[boomFrameIndex];
+			} else {
+				// 애니메이션 종료 후 이미지 null로 설정
+				boomAnimationTimer.stop();
+				currentBoomImage = null;
+			}
+			repaint();
+		});
+		boomAnimationTimer.setRepeats(true);
+	}
+
+	// 애니메이션 시작 메서드
+	private void startBoomAnimation() {
+		boomFrameIndex = 0;
+
+		if (boomAnimationTimer.isRunning()) {
+			boomAnimationTimer.stop();
+		}
+		boomAnimationTimer.start();
+	}
 
 	@Override
 	public void updateByMusicTime(int t) {
@@ -364,6 +414,25 @@ public class SpaceStage3 extends SpaceAnimation {
 			Material mat = matList.get(i);
 			mat.screenDraw(g);
 		}
+
+		if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
+
+
+	}
+
+	private void drawBoom(Graphics g) {
+			int origW = currentBoomImage.getWidth(this);
+			int origH = currentBoomImage.getHeight(this);
+
+			// 🔹 스케일 적용된 크기
+			int drawW = (int) (origW * boomScale);
+			int drawH = (int) (origH * boomScale);
+
+			// 클릭된 좌표에 그려짐
+			int x = boomDrawX - drawW / 2;
+			int y = boomDrawY - drawH / 2;
+
+			g.drawImage(currentBoomImage, x, y, drawW, drawH, this);
 
 	}
 
