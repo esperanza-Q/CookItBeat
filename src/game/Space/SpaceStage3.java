@@ -45,7 +45,7 @@ public class SpaceStage3 extends SpaceAnimation {
 
     public static final int SLEEP_TIME = 10;
     private final int FIXED_START_Y = -300; // 모든 재료의 초기 Y 좌표 (화면 밖)
-    private final int JUDGEMENT_TARGET_Y = 100; // 판정선 Y 좌표
+    private final int JUDGEMENT_TARGET_Y = 150; // 판정선 Y 좌표
 
     ArrayList<Material> matList = new ArrayList<Material>();
 
@@ -640,10 +640,9 @@ public class SpaceStage3 extends SpaceAnimation {
             // 잔해는 즉시 떨어지기 시작합니다. (별도의 start time 체크 불필요)
             frag.drop();
 
-            // 화면 밖으로 벗어난 잔해는 제거하여 메모리 해제
-            final int SCREEN_HEIGHT = this.getHeight();
-            if (frag.getY() > SCREEN_HEIGHT + 100) { // 화면 하단 아래로 100px 벗어나면 제거
-                fragmentIterator.remove();
+            if (frag.getY() > 182) {
+                fragmentIterator.remove(); // 잔해 제거
+                continue; // 제거 후 다음 반복으로 이동
             }
         }
     }
