@@ -145,7 +145,7 @@ public class SpaceStage3 extends SpaceAnimation {
 
 		Random random = new Random();
 		// 이미지 교체 예정
-		stage3Banner = new ImageIcon(Main.class.getResource("../images/alienStage_image/space_stage2.png")).getImage();
+		stage3Banner = new ImageIcon(Main.class.getResource("../images/alienStage_image/space_stage3.png")).getImage();
 
 		// ‼️ currentUser는 cat1으로 고정 (사용자가 SpaceBar 누를 때만 cat2로 변경)
 		currentUser = cat1;

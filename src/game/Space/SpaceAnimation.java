@@ -35,10 +35,14 @@ public class SpaceAnimation extends JPanel {
     // ‼️ [유지] 물총 이미지 배열만 protected로 유지 (하위 클래스 사용 목적)
     protected Image[] waterFrames;
     // ‼️ 물총 관련 Timer, Index, Image 변수 및 로직은 SpaceStage1로 이동
-    
+
     // ✅ [추가] 레이저 이미지 배열
     protected Image[] laserFrames;
-    
+
+
+    // 공기포 관련 이미지 배열
+    protected Image[] BoomFrames;
+
     //‼️애니메이션 버전
     private Image planets1;
     private double t = 0;
@@ -108,12 +112,19 @@ public class SpaceAnimation extends JPanel {
         for (int i = 0; i < 4; i++) {
             waterFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/water0" + (i + 1) + ".png")).getImage();
         }
-        
+
         // ✅ 레이저 이미지 프레임 초기화 (하위 클래스에서 사용)
         laserFrames = new Image[2];
         for (int i = 0; i < 2; i++) {
             laserFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser0" + (i + 1) + ".png")).getImage();
         }
+
+        BoomFrames = new Image[3];
+        for (int i = 0; i < 3; i++) {
+            BoomFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/Boom0" + (i + 1) + ".png")).getImage();
+        }
+
+
 
         // ✅ [추가] 판정 이미지 로드
         judgementImages[0] = new ImageIcon(Main.class.getResource("../images/mainUI/acc_perfect.png")).getImage(); // PERFECT
@@ -217,6 +228,7 @@ public class SpaceAnimation extends JPanel {
                 }
             }
 
+
             @Override
             public void keyReleased(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE && isHolding) {
@@ -224,7 +236,7 @@ public class SpaceAnimation extends JPanel {
                 }
             }
         });
-        
+
 
         setupAnimationTimers();
         setupJudgementTimer(); // ✅ 판정 결과 출력 타이머 초기화
@@ -237,6 +249,20 @@ public class SpaceAnimation extends JPanel {
         this(new long[]{});
     }
 
+
+    // ✅ 새 메서드: StageManager의 totalScore를 이 스테이지에 반영
+    public void syncScoreFromManager() {
+        int total = StageManager.getTotalScore();
+
+        // 이 스테이지가 기준으로 삼을 오프셋
+        this.scoreOffset = total;
+        this.currentScore = total;
+
+        // 판정 매니저가 관리하는 점수도 전체 점수로 맞춰 줌
+        if (judgementManager != null) {
+            judgementManager.setScore(total);
+        }
+    }
 
     // ✅ [추가] 판정 결과 출력 타이머 초기화
     private void setupJudgementTimer() {
@@ -333,6 +359,11 @@ public class SpaceAnimation extends JPanel {
             if (cannonImage != null) g.drawImage(cannonImage, 0, 0, null);
         }
 
+        // 🔹 이 시점까지는 배경/행성/UFO/대포까지만 그림
+        //    → 여기서 스테이지별 "컨트롤러 아래" 오브젝트들을 그림
+        drawStageObjectsUnderController(g);
+
+        // 🔹 이제 컨트롤러 + 손(조종간) 그리기 → 이 위로 면발이 지나가게 됨
         g.drawImage(controller, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(L_currentControlImage, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(R_currentControlImage, 0, 0, getWidth(), getHeight(), this);
@@ -467,15 +498,10 @@ public class SpaceAnimation extends JPanel {
             }
         }
 
-        // ✅ [수정] 현재 점수 갱신 및 StageManager에 저장
+        // ✅ [수정 22] judgementManager가 관리하는 점수를 "전체 점수"로 사용
         if (judgementManager != null) {
-            int currentStageScore = judgementManager.getScore();
-
-            // ‼️ [수정] 이월된 점수 + 현재 스테이지 점수를 합산하여 전체 점수를 StageManager에 저장합니다.
-            int totalGameScore = this.scoreOffset + currentStageScore;
+            int totalGameScore = judgementManager.getScore();
             StageManager.setTotalScore(totalGameScore);
-
-            // ‼️ [추가] 로컬 currentScore 변수를 갱신하여 paintComponent에서 올바른 점수를 그리도록 합니다.
             this.currentScore = totalGameScore;
         }
 
@@ -504,4 +530,6 @@ public class SpaceAnimation extends JPanel {
     protected void changeStageImageOnRelease() {}
     protected void processStageEvents(int t) {}
     protected boolean isTimeInputBlocked() { return false; }
+    // 🔹 새로 추가: 컨트롤러보다 아래에 깔릴 오브젝트용 훅
+    protected void drawStageObjectsUnderController(Graphics g) {}
 }
