@@ -141,7 +141,7 @@ public class SpaceStage3 extends SpaceAnimation {
 		cat1 = new ImageIcon(Main.class.getResource("../images/alienStage_image/alien_catHand01.png")).getImage();
 		cat2 = new ImageIcon(Main.class.getResource("../images/alienStage_image/alien_catHand02.png")).getImage();
 
-		cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon02.png")).getImage();
+		cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon01_M.png")).getImage();
 
 		Random random = new Random();
 		// 이미지 교체 예정
@@ -170,11 +170,10 @@ public class SpaceStage3 extends SpaceAnimation {
         	    	Material mat = matList.get(i);
         	    	
         	        if (mat.getBounds().contains(clickX, clickY)) {
-        	            
-        	        	materialIndex = i; // ⭐️ 클릭된 재료의 인덱스 저장
+        	        	//materialIndex = i; // ⭐️ 클릭된 재료의 인덱스 저장 -> 클릭 좌표 기반 이미지 설정으로 수정
                         
-                        // 1. 레이저 이미지 설정 요청 (인덱스 기반)
-                        updateLaserFramesByMaterialIndex(materialIndex);
+                        // 1. 레이저 이미지 설정 요청 (인덱스 기반) -> 클릭 좌표 기반으로 수정
+						updateLaserFramesByClickX(clickX);
                         
         	            // ⭐️ 1. 타이머 시작 요청
         	            startLaserAnimation(); 
@@ -199,15 +198,15 @@ public class SpaceStage3 extends SpaceAnimation {
 		gameTimer.start();
 
 		// 정답타이밍, 재료타입, x속도, y속도, x도착좌표, y도착좌표
-		dropMats(56563, materialNames[random.nextInt(3)], 3, 4, 400);
-		dropMats(56778, materialNames[random.nextInt(3)], 0, 4, 530);
-		dropMats(56994, materialNames[random.nextInt(3)], -3, 4, 700);
+		dropMats(56563, materialNames[random.nextInt(3)], 2.7, 3.6, 400);
+		dropMats(56778, materialNames[random.nextInt(3)], 0, 3.6, 530);
+		dropMats(56994, materialNames[random.nextInt(3)], -2.7, 3.6, 700);
 
-		dropMats(62554, materialNames[random.nextInt(3)], -3, 4, 700);
-		dropMats(62775, materialNames[random.nextInt(3)], 0, 4, 530);
-		dropMats(62996, materialNames[random.nextInt(3)], 3, 4, 400);
-		dropMats(64270, materialNames[random.nextInt(3)], 1, 4, 430);
-		dropMats(64724, materialNames[random.nextInt(3)], -1, 4, 630);
+		dropMats(62554, materialNames[random.nextInt(3)], -2.7, 3.6, 700);
+		dropMats(62775, materialNames[random.nextInt(3)], 0, 3.6, 530);
+		dropMats(62996, materialNames[random.nextInt(3)], 2.7, 3.6, 400);
+		dropMats(64270, materialNames[random.nextInt(3)], 0.9, 3.6, 430);
+		dropMats(64724, materialNames[random.nextInt(3)], -0.9, 3.6, 630);
 
 		dropMats(72849, "soup", 0, 4, 530);
 
@@ -217,40 +216,45 @@ public class SpaceStage3 extends SpaceAnimation {
 		gameTimer.start();
 
 	}
-	
-	protected void updateLaserFramesByMaterialIndex(int materialIndex) {
-	    // 인덱스 그룹 A: 1, 4, 8, 9 -> laser01, laser02 사용
-	    Integer[] groupA = {1, 4, 8, 9};
-	    // 인덱스 그룹 B: 0, 5, 6 -> laser03, laser04 사용
-	    Integer[] groupB = {0, 5, 6};
-	    Integer[] groupC = {2, 3, 7};
 
-	    String baseFileName;
+	protected void updateLaserFramesByClickX(int clickX) {
+		final int MIN_X = 436;
+		final int MAX_X = 831;
+		final int RANGE_WIDTH = MAX_X - MIN_X; // 831 - 436 = 395
 
-	    if (Arrays.asList(groupA).contains(materialIndex)) {
-	        baseFileName = "laser0"; // 파일명: laser01.png, laser02.png
-	    } else if (Arrays.asList(groupB).contains(materialIndex)) {
-	        baseFileName = "laser0"; // 파일명: laser03.png, laser04.png (실제 파일명이 laser03, laser04인 경우)
-	    } else {
-	        // 기본값 또는 다른 그룹 설정 (예: 나머지 인덱스는 laser05, laser06)
-	        baseFileName = "laser0"; // 기본값 파일명: laser01.png, laser02.png 사용
-	    }
-	    
-	    // **가정**: 
-	    // Group A는 laser01.png, laser02.png 사용
-	    // Group B는 laser03.png, laser04.png 사용
+		// 2. 영역 3등분을 위한 경계 계산
+		// 유효 영역을 3등분하여 왼쪽, 가운데, 오른쪽 영역을 정의합니다.
+		int leftBoundary = MIN_X + (RANGE_WIDTH / 3);       // 436 + (395 / 3) ≈ 436 + 131 = 567
+		int rightBoundary = MIN_X + (RANGE_WIDTH * 2 / 3);  // 436 + (395 * 2 / 3) ≈ 436 + 263 = 699
 
-	    if (Arrays.asList(groupA).contains(materialIndex)) {
-	        laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser01.png")).getImage();
-	        laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser02.png")).getImage();
-	    } else if (Arrays.asList(groupB).contains(materialIndex)) {
-	        laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser03.png")).getImage();
-	        laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser04.png")).getImage();
-	    } else if (Arrays.asList(groupC).contains(materialIndex)) {
-	        // 나머지 인덱스의 기본값 처리
-	        laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser05.png")).getImage();
-	        laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser06.png")).getImage();
-	    }
+		// 2. 클릭 위치에 따른 이미지 설정
+		if (clickX < leftBoundary) {
+			// ⭐️ 왼쪽 1/3 영역에 클릭됨
+			// Group B 이미지 (laser03, laser04) 사용
+			laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser03.png")).getImage();
+			laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser04.png")).getImage();
+
+			cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon01_L.png")).getImage();
+			//System.out.println("Laser Direction: Left (3, 4)");
+
+		} else if (clickX >= rightBoundary) {
+			// ⭐️ 오른쪽 1/3 영역에 클릭됨
+			// Group C 이미지 (laser05, laser06) 사용
+			laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser05.png")).getImage();
+			laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser06.png")).getImage();
+
+			cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon01_R.png")).getImage();
+			//System.out.println("Laser Direction: Right (5, 6)");
+
+		} else {
+			// ⭐️ 가운데 1/3 영역에 클릭됨
+			// Group A 이미지 (laser01, laser02) 사용
+			laserFrames[0] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser01.png")).getImage();
+			laserFrames[1] = new ImageIcon(Main.class.getResource("../images/alienStage_image/laser02.png")).getImage();
+
+			cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon01_M.png")).getImage();
+			System.out.println("Laser Direction: Center (1, 2)");
+		}
 	}
 
 	// ✅ [추가] 레이저 애니메이션 타이머 설정 메서드
@@ -263,6 +267,9 @@ public class SpaceStage3 extends SpaceAnimation {
                 // 애니메이션 종료 후 이미지 null로 설정
                 laserAnimationTimer.stop();
                 currentLaserImage = null;
+
+				// ‼️ [추가] 레이저 애니메이션 종료 시 대포 이미지 원상 복구
+				cannon = new ImageIcon(Main.class.getResource("../images/alienStage_image/cannon01_M.png")).getImage();
             }
             repaint();
         });
@@ -433,12 +440,12 @@ public class SpaceStage3 extends SpaceAnimation {
 	
 	
 	// answerTimeMs : 정답 타이밍
-	public void dropMats(long answerTimeMs, String matType, int speedX, int speedY, int destX) {
+	public void dropMats(long answerTimeMs, String matType, double speedX, double speedY, int destX) {
 
 		// 1. 초기 좌표와 출발 시간 계산
-		long[] posAndTime = calculateInitialAndTime(answerTimeMs, speedX, speedY, destX);
-		int startX = (int) posAndTime[0];
-		long dropStartTime = posAndTime[1];
+		SpeedResult result = calculateInitialAndTime(answerTimeMs, speedX, speedY, destX);
+		double startX = result.getNewSpeedX();
+		long dropStartTime = result.getTimestamp();
 
 		// 2. Material 객체 생성 (고정 Y 좌표와 계산된 X, 시간 사용)
 		Material newMat = new Material(startX, FIXED_START_Y, matType, speedX, speedY, answerTimeMs, dropStartTime);
@@ -447,26 +454,39 @@ public class SpaceStage3 extends SpaceAnimation {
 		matList.add(newMat);
 	}
 
-	private long[] calculateInitialAndTime(long answerTimeMs, int speedX, int speedY, int destX) {
+	private SpeedResult calculateInitialAndTime(long answerTimeMs, double speedX, double speedY, int destX) {
 
 		// 1. 이동 거리 계산 (Y축)
 		double distanceY = JUDGEMENT_TARGET_Y - FIXED_START_Y;
 
 		// 2. Y축 이동에 필요한 틱 수 및 시간 계산
-		double totalTicks = distanceY / (double) speedY;
+		double totalTicks = distanceY / speedY;
 		long travelTimeMs = (long) (totalTicks * SLEEP_TIME);
 
 		// 3. X축 이동 거리 계산 (도착 시간을 맞추기 위해 Y축 시간과 동일하게 사용)
-		int distanceX = (int) (speedX * totalTicks);
+		double distanceX = speedX * totalTicks;
 
 		// 4. 초기 X 좌표 계산 (Initial = Center - Distance)
 		// 재료가 중앙에 도착하도록 X좌표 역산
-		int initialX = destX - distanceX;
+		double initialX = destX - distanceX;
 
 		// 5. 드롭 시작 시간 계산 (Start = Answer Time - Travel Time)
 		long dropStartTime = answerTimeMs - travelTimeMs;
 
-		return new long[] { initialX, dropStartTime };
+		return new SpeedResult(initialX, dropStartTime);
+	}
+
+	public class SpeedResult {
+		private final double newSpeedX;
+		private final long timestamp;
+
+		public SpeedResult(double newSpeedX, long timestamp) {
+			this.newSpeedX = newSpeedX;
+			this.timestamp = timestamp;
+		}
+
+		public double getNewSpeedX() { return newSpeedX; }
+		public long getTimestamp() { return timestamp; }
 	}
 
 	private void updateMaterialPositions() {
@@ -527,10 +547,10 @@ class Material {
 	private Image slicedSoupImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/soup02.png"))
 			.getImage();
 
-	private int x, y; // 생성 위치
+	private double x, y; // 생성 위치
 	private int width, height;
 	public String matType; // 어떤 재료인지
-	private int xSpeed, ySpeed;
+	private double xSpeed, ySpeed;
 
 	public int getWidth() {
 		return width;
@@ -540,11 +560,11 @@ class Material {
 		return height;
 	}
 
-	public int getX() {
+	public double getX() {
 		return x;
 	}
 
-	public int getY() {
+	public double getY() {
 		return y;
 	}
 
@@ -556,7 +576,7 @@ class Material {
 
 	public double rotationAngle = 0; // ⭐️ 회전 각도 (라디안 또는 도)
 
-	public Material(int x, int y, String matType, int xSpeed, int ySpeed, long targetArriveTime, long dropStartTime) {
+	public Material(double x, double y, String matType, double xSpeed, double ySpeed, long targetArriveTime, long dropStartTime) {
 		this.x = x; // 생성 좌표
 		this.y = y;
 		this.matType = matType;
@@ -569,32 +589,32 @@ class Material {
 	public void screenDraw(Graphics g) {
 		switch (matType) {
 		case "chili":
-			g.drawImage(chiliImage, x, y, 100, 200, null);
-			width = 100;
-			height = 200;
+			g.drawImage(chiliImage, (int)Math.round(x), (int)Math.round(y), 157, 300, null);
+			width = 157;
+			height = 300;
 			break;
 		case "egg":
-			g.drawImage(eggImage, x, y, 212, 192, null);
+			g.drawImage(eggImage, (int)Math.round(x), (int)Math.round(y), 212, 192, null);
 			width = 212;
 			height = 192;
 			break;
 		case "mushroom":
-			g.drawImage(mushroomImage, x, y, 150, 100, null);
-			width = 150;
-			height = 100;
+			g.drawImage(mushroomImage, (int)Math.round(x), (int)Math.round(y), 170, 113, null);
+			width = 170;
+			height = 113;
 			break;
 		case "welshonion1":
-			g.drawImage(welshonion1Image, x, y, 100, 100, null);
-			width = 100;
-			height = 100;
+			g.drawImage(welshonion1Image, (int)Math.round(x), (int)Math.round(y), 200, 200, null);
+			width = 200;
+			height = 200;
 			break;
 		case "welshonion2":
-			g.drawImage(welshonion2Image, x, y, 100, 100, null);
-			width = 100;
-			height = 100;
+			g.drawImage(welshonion2Image, (int)Math.round(x), (int)Math.round(y), 200, 200, null);
+			width = 200;
+			height = 200;
 			break;
 		case "soup":
-			g.drawImage(soupImage, x, y, 220, 271, null);
+			g.drawImage(soupImage, (int)Math.round(x), (int)Math.round(y), 220, 271, null);
 			width = 220;
 			height = 271;
 			break;
@@ -612,26 +632,9 @@ class Material {
 	}
 
 	public Rectangle getBounds() {
-		return new Rectangle(x, y, width, height);
+		return new Rectangle((int)Math.round(x), (int)Math.round(y), width, height);
 	}
 
-	// ⭐️ 회전 각도 설정 메서드
-	public void setTargetDirection(int launcherX, int launcherY) {
-		// 이미지가 중앙에서 회전한다고 가정하고, 이미지의 중심 좌표를 계산
-		int targetX = x + (width / 2);
-		int targetY = y + (height / 2);
-		
-		// 1. x, y 축 거리(차이) 계산
-	    double dx = targetX - launcherX;
-	    double dy = targetY - launcherY;
 
-	    // 2. atan2를 사용하여 라디안(Radian) 각도 계산
-	    // atan2(dy, dx)는 x, y를 고려하여 -π ~ π 범위의 각도를 정확하게 반환합니다.
-	    double angleInRadians = Math.atan2(dy, dx);
-
-	    // 3. 라디안을 도(Degree)로 변환
-	    this.rotationAngle = Math.toDegrees(angleInRadians);
-	    
-	}
 
 }
