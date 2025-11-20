@@ -82,7 +82,7 @@ public class SpaceAnimation extends JPanel {
     private Timer judgementTimer;
     private final int JUDGEMENT_DISPLAY_TIME_MS = 1000; // 판정 결과 표시 시간 (1초)
 
-    private final int GLOBAL_JUDGEMENT_OFFSET_MS = -260;
+    private final int GLOBAL_JUDGEMENT_OFFSET_MS = -60;
 
     // ✅ [추가] 점수 오프셋 (이전 스테이지에서 이월된 점수)
     private int scoreOffset = 0;
