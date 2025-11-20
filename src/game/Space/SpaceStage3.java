@@ -171,15 +171,14 @@ public class SpaceStage3 extends SpaceAnimation {
         	    	
         	        if (mat.getBounds().contains(clickX, clickY)) {
         	        	//materialIndex = i; // ⭐️ 클릭된 재료의 인덱스 저장 -> 클릭 좌표 기반 이미지 설정으로 수정
-                        
+
+						processSpaceKeyPressLogic(); // 판정 로직
+
                         // 1. 레이저 이미지 설정 요청 (인덱스 기반) -> 클릭 좌표 기반으로 수정
 						updateLaserFramesByClickX(clickX);
                         
-        	            // ⭐️ 1. 타이머 시작 요청
-        	            startLaserAnimation(); 
-        	            
-        	            // ⭐️ 2. 이미지 회전 방향 설정 요청
-        	            //mat.setTargetDirection(clickX, clickY);
+        	            // ⭐️ 타이머 시작 요청 -> 레이저 발사
+        	            startLaserAnimation();
         	            
         	            // 한 번에 하나만 처리
         	            break;
