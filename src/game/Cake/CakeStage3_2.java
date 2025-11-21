@@ -5,6 +5,8 @@ import game.Main;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class CakeStage3_2 extends CakeAnimation {
 
@@ -36,20 +38,65 @@ public class CakeStage3_2 extends CakeAnimation {
     private static final long CREAM_ANIMATION_START = 97837; // 반복 애니메이션 시작
     private static final long CREAM_GUIDE_END = 99000;   // ‼️ 가이드 이미지가 최종 사라지는 시점
 
+    private static final long CREAM_END_TIME = 102988;
+
     private static final long STRAWBERRY_GUIDE_START = 102988; // 딸기 가이드 시작
     private static final long STRAWBERRY_ANIMATION_START = 104700; // 반복 애니메이션 시작
     private static final long STRAWBERRY_GUIDE_END = 106000; // 딸기 데코 시작 (가이드 숨김 시점)
 
+    private static final long STRAWBERRY_END_TIME = 108000;  // 딸기 데코 구간 끝
+
     private static final int ANIMATION_FRAME_RATE = 150; // 애니메이션 프레임 전환 속도 (ms)
 
-    // 현재 그릴 가이드 이미지를 저장할 변수
-    private Image currentGuideLightImage = null;
-    private int currentGuideLightImage_X = 0;
-    private int currentGuideLightImage_Y = 0;
+    private int mouseX = 0;
+    private int mouseY = 0;
+
+    private boolean isPipingActive = false;
 
     public CakeStage3_2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
+
+        // ‼️ 마우스 리스너 초기화 호출
+        initializeMouseTracking();
+    }
+
+    // ‼️ 리스너를 위한 초기화 메소드 (생성자에서 호출)
+    private void initializeMouseTracking() {
+        this.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                // 마우스가 움직일 때마다 좌표를 업데이트합니다.
+                mouseX = e.getX();
+                mouseY = e.getY();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                // 마우스를 드래그할 때도 좌표를 업데이트합니다.
+                mouseX = e.getX();
+                mouseY = e.getY();
+            }
+
+        });
+
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                System.out.println("Mouse Pressed! isPipingActive is now true");
+                isPipingActive = true;
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                isPipingActive = false;
+                repaint();
+            }
+        });
+
+        // 이 컴포넌트가 마우스 이벤트를 받을 수 있도록 focusable 설정
+        this.setFocusable(true);
     }
 
 
@@ -83,6 +130,8 @@ public class CakeStage3_2 extends CakeAnimation {
         }
 
         long currentTime = currentMusicTimeMs;
+
+        Image currentPipingImage = isPipingActive ? creamPiping2 : creamPiping1;
 
         // --- A. 크림 가이드 및 애니메이션 구간 (96140ms ~ 99000ms) ---
         if (currentTime >= CREAM_GUIDE_START && currentTime < CREAM_GUIDE_END) {
@@ -160,6 +209,44 @@ public class CakeStage3_2 extends CakeAnimation {
                     g2.drawImage(animationImage, x, y, GUIDE_LIGHT_WIDTH, GUIDE_LIGHT_HEIGHT, null);
                 }
             }
+        }
+
+        // --- C. 마우스 따라다니기 로직 (수정됨) ---
+
+        Image imageToFollow = null;
+
+        // 1. 🍓 딸기 데코 구간 (102988ms ~ 108000ms 미만)
+        // ‼️ 두 구간이 겹치므로, 딸기 이미지를 우선하여 검사합니다.
+        if (currentTime >= STRAWBERRY_GUIDE_START && currentTime < STRAWBERRY_END_TIME) {
+            imageToFollow = decoStrawberry;
+        }
+
+        // 2. 🍦 크림 데코 구간 (96140ms ~ 102988ms 미만)
+        // ‼️ 딸기 구간과 겹치는 102988ms에서는 딸기가 선택됩니다.
+        else if (currentTime >= CREAM_GUIDE_START && currentTime < CREAM_END_TIME) {
+            imageToFollow = currentPipingImage;
+        }
+
+        // 3. 이미지 그리기
+        if (imageToFollow != null) {
+            // 마우스 커서 중앙에 이미지가 오도록 좌표를 조정합니다.
+            int TOOL_SIZE_x = 0;
+            int TOOL_SIZE_y = 0;
+            int drawX = 0;
+            int drawY = 0;
+            if(imageToFollow == currentPipingImage){
+                TOOL_SIZE_x = 225;
+                TOOL_SIZE_y = 275;
+                drawX = mouseX - TOOL_SIZE_x + 30;
+                drawY = mouseY - TOOL_SIZE_y + 30 ;
+            } else {
+                TOOL_SIZE_x = 230;
+                TOOL_SIZE_y = 210;
+                drawX = mouseX - TOOL_SIZE_x / 2;
+                drawY = mouseY - TOOL_SIZE_y / 2;
+            }
+
+            g2.drawImage(imageToFollow, drawX, drawY, TOOL_SIZE_x, TOOL_SIZE_y, null);
         }
 
     }
