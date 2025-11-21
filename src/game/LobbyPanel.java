@@ -57,7 +57,7 @@ public class LobbyPanel extends JPanel {
         cakeButton.setBounds(CAKE_BUTTON_BOUNDS); // 💡 위치와 크기 설정
         add(cakeButton);
         // 💡 케이크 버튼 클릭 이벤트 리스너 추가
-        alienButton.addActionListener(e -> {
+        cakeButton.addActionListener(e -> {
             // 버튼 클릭 시 수행할 동작: 케이크 스테이지 패널을 실행
             gameFrame.showCakeScreen();
         });

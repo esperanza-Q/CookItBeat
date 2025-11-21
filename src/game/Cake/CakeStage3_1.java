@@ -1,13 +1,12 @@
 package game.Cake;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
 
-public class CakeStage2 extends CakeAnimation {
+public class CakeStage3_1 extends CakeAnimation {
 
     private CakePanel controller;
 
-    public CakeStage2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
+    public CakeStage3_1(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
     }
@@ -24,7 +23,7 @@ public class CakeStage2 extends CakeAnimation {
 
     @Override
     protected void drawStageObjects(Graphics2D g2) {
-//
+//      
 
         // 🖼️ 가이드 카드병정 이미지
         if (guideCardImage != null) {
