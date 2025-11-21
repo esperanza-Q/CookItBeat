@@ -23,6 +23,13 @@ public abstract class CakeAnimation extends JPanel {
     protected Image playerToolImage;
     protected Image shadowImage;
 
+    protected Image decoStrawberry; // 플레이어 도구, 데코 딸기
+    protected Image decoCream;
+    protected Image[] guideLights;
+    protected Image guideStick;
+    protected Image creamPiping1;
+    protected Image creamPiping2; // 플레이어 도구 짤주머니
+
     protected int currentMusicTimeMs = 0; // 현재 음악 재생 시간
 
     // ✂️ [추가] 가위 상태 및 위치 변수
