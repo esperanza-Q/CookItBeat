@@ -45,7 +45,7 @@ public class SpaceStage3 extends SpaceAnimation {
 
     public static final int SLEEP_TIME = 10;
     private final int FIXED_START_Y = -300; // 모든 재료의 초기 Y 좌표 (화면 밖)
-    private final int JUDGEMENT_TARGET_Y = 150; // 판정선 Y 좌표
+    private final int JUDGEMENT_TARGET_Y = 50; // 판정선 Y 좌표
 
     ArrayList<Material> matList = new ArrayList<Material>();
 
@@ -135,6 +135,10 @@ public class SpaceStage3 extends SpaceAnimation {
     // ‼️ 인스턴스 변수이므로 super() 호출 후 초기화해야 함
     private final int[] ALIEN_RELEASE_TIMES;
 
+    // ✅ [추가] 수프 멈춤/재개 타이밍 상수
+    private final int SOUP_STOP_TIME = toJudgeMs(72500);   // 72.5초에 정지 조건 활성화
+    private final int SOUP_RESUME_TIME = toJudgeMs(75500); // 75.5초에 재개
+
     // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
     private static long[] convertToLongArray(int[] array) {
         long[] result = new long[array.length];
@@ -189,14 +193,11 @@ public class SpaceStage3 extends SpaceAnimation {
 
                 int materialIndex = -1;
 
-
                 // 충돌 판정 루프
                 for (int i = 0; i < matList.size(); i++) {
                     Material mat = matList.get(i);
 
                     if (mat.getBounds().contains(clickX, clickY)) {
-                        //materialIndex = i; // ⭐️ 클릭된 재료의 인덱스 저장 -> 클릭 좌표 기반 이미지 설정으로 수정
-
                         Music.playEffect("laser02.mp3");
 
                         processSpaceKeyPressLogic(); // 판정 로직
@@ -208,15 +209,29 @@ public class SpaceStage3 extends SpaceAnimation {
                         startLaserAnimation();
 
                         if (currentJudgementText != null && !currentJudgementText.equals("MISS")) {
-                            boomDrawX = clickX;
-                            boomDrawY = clickY;
+                            boolean shouldExplode = true; // 기본적으로 폭발
 
-                            createAndDropFragments(mat, clickX);
-                            // ⭐️ 재료 이미지 없어지게 함 (리스트에서 제거)
-                            matList.remove(i);
+                            // ⭐️ [수정] 수프 재료 특수 로직: 정지 상태이고, 5회 미만 클릭일 때
+                            if (mat.isSoup && mat.isStopped ) {
+                                mat.currentHits++; // 성공 횟수 증가
 
-                            // ⭐️ 폭발 애니메이션 시작
-                            startBoomAnimation(); // <-- 이름 변경 적용
+                                if (mat.currentHits < mat.REQUIRED_HITS) {
+                                    // 5회 미만이면 폭발하지 않고 카운트만 증가
+                                    shouldExplode = false;
+                                }
+                            }
+
+                            if (shouldExplode) {
+                                boomDrawX = clickX;
+                                boomDrawY = clickY;
+
+                                createAndDropFragments(mat, clickX);
+                                // ‼️ [수정] 즉시 제거(matList.remove(i)) 대신 제거 플래그 설정
+                                mat.isDead = true;
+
+                                // ⭐️ 폭발 애니메이션 시작
+                                startBoomAnimation(); // <-- 이름 변경 적용
+                            }
                         }
 
                         // 한 번에 하나만 처리
@@ -253,159 +268,6 @@ public class SpaceStage3 extends SpaceAnimation {
         // 타이머 시작
         gameTimer.start();
 
-    }
-
-    @Override
-    public void updateByMusicTime(int t) {
-        super.updateByMusicTime(t); // SpaceAnimation의 점수 업데이트 및 기본 로직 호출
-
-        this.progressTime = t;
-
-        // 53.5초에 한 번만 켜기 (표시 시간은 1.5초 예시)
-        if (!bannerShown && t >= toJudgeMs(53500)) {
-            bannerShown = true;
-            bannerVisible = true;
-            bannerHideAtMs = t + 1500; // 1.5초 뒤 자동 숨김
-            repaint();
-        }
-
-        // 자동 숨김
-        if (bannerVisible && t >= bannerHideAtMs) {
-            bannerVisible = false;
-            repaint();
-        }
-
-        // ✅ 외계인 손 자동 동작 타이밍 확인 (ALIEN_PRESS_TIMES_INT 사용)
-        for (int pressTime : ALIEN_PRESS_TIMES_INT) {
-            if (t >= pressTime && t < pressTime + 50) { // 50ms동안 가이드 동작
-                if (currentAlien == alien1)
-                    currentAlien = alien2;
-                break;
-            }
-        }
-
-        for (int releaseTime : ALIEN_RELEASE_TIMES) {
-            if (t >= releaseTime && t < releaseTime + 50) {
-                if (currentAlien == alien2)
-                    currentAlien = alien1;
-                break;
-            }
-        }
-    }
-
-    @Override
-    public void drawStageObjects(Graphics g) {
-        // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
-        g.drawImage(currentUser, 0, 0, null);
-
-        // 배너 오버레이 (맨 위)
-        if (bannerVisible && stage3Banner != null) {
-            Graphics2D g2 = (Graphics2D) g.create();
-
-            // 원하는 크기 (픽셀 단위)
-            int targetWidth = 300; // 폭
-            int targetHeight = 250; // 높이
-
-            // 화면 중앙 정렬
-            int x = (getWidth() - targetWidth) / 2;
-            int y = 50; // 위에서 조금 아래쪽
-
-            // 고화질 렌더링 (픽셀 깨짐 방지)
-            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-
-            // 이미지 그리기
-            g2.drawImage(stage3Banner, x, y, targetWidth, targetHeight, null);
-            g2.dispose();
-        }
-
-        // ✅ 외계인 손을 왼쪽 y축 중간에 작게 그립니다.
-        if (currentAlien != null) {
-            g.drawImage(currentAlien, 0, 0, getWidth(), getHeight(), null);
-        }
-
-        for (int i = 0; i < matList.size(); i++) {
-            Material mat = matList.get(i);
-            mat.screenDraw(g);
-        }
-
-        // 잔해(Fragment) 리스트 그리기
-        for (Material frag : fragmentList) {
-            frag.screenDraw(g);
-        }
-
-        if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
-
-
-    }
-
-    @Override
-    public Image getCannon() {
-        return cannon;
-    }
-
-    @Override
-    protected void changeStageImageOnPress() {
-        // ‼️ currentUser가 cat1일 때만 cat2로 변경
-        if (currentUser == cat1)
-            this.currentUser = cat2;
-    }
-
-    @Override
-    protected void changeStageImageOnRelease() {
-        // ‼️ currentUser가 cat2일 때만 cat1으로 변경
-        if (currentUser == cat2)
-            this.currentUser = cat1;
-    }
-
-    @Override
-    protected void processStageEvents(int t) {
-        // ‼️ 이벤트 타이밍에 따라 currentAlien (외계인 손)의 보이기/숨기기 및 이미지를 제어합니다.
-
-        // 1. 초기화 (초기 상태)
-        if (t < ALIEN_APPEAR_TIME_1 && currentAlien != null) {
-            currentAlien = null;
-        }
-
-        // 2. 외계인 손 등장 및 이미지 변경 로직
-        // 외계인 손이 등장하는 시점에 alien1로 설정
-        if (!event1Triggered && t >= ALIEN_APPEAR_TIME_1) {
-            event1Triggered = true;
-            currentAlien = alien1;
-        }
-        if (!event2Triggered && t >= ALIEN_APPEAR_TIME_2) {
-            event2Triggered = true;
-            currentAlien = alien1;
-        }
-        if (!event3Triggered && t >= ALIEN_APPEAR_TIME_3) {
-            event3Triggered = true;
-            currentAlien = alien1;
-        }
-        if (!event4Triggered && t >= ALIEN_APPEAR_TIME_4) {
-            event4Triggered = true;
-            currentAlien = alien1;
-        }
-        if (!event5Triggered && t >= ALIEN_APPEAR_TIME_5) {
-            event5Triggered = true;
-            currentAlien = alien1;
-        }
-        if (!event6Triggered && t >= ALIEN_APPEAR_TIME_6) {
-            event6Triggered = true;
-            currentAlien = alien1;
-        }
-        if (!event7Triggered && t >= ALIEN_APPEAR_TIME_7) {
-            event7Triggered = true;
-            currentAlien = alien1;
-        }
-        if (!event8Triggered && t >= ALIEN_APPEAR_TIME_8) {
-            event8Triggered = true;
-            currentAlien = alien1;
-        }
-    }
-
-    @Override
-    protected boolean isTimeInputBlocked() {
-        // ‼️ 입력 차단 로직 제거 요청에 따라 항상 false 반환
-        return false;
     }
 
     protected void updateLaserFramesByClickX(int clickX) {
@@ -703,13 +565,39 @@ public class SpaceStage3 extends SpaceAnimation {
         while (iterator.hasNext()) {
             Material mat = iterator.next();
 
+            // ⭐️ [추가] isDead 플래그 확인 및 안전하게 제거
+            if (mat.isDead) {
+                iterator.remove(); // ⭐️ Iterator의 remove()를 사용하여 안전하게 제거
+                continue;
+            }
+
+            // ⭐️ [추가] 수프 재료 정지/재개 로직
+            if (mat.isSoup) {
+                //System.out.println(수프정지);
+                // 1. 정지 조건: 72.5초가 지났고, Y좌표가 150에 도달했을 때
+                if (!mat.isStopped && progressTime >= SOUP_STOP_TIME && mat.getY() >= mat.STOP_Y && progressTime < SOUP_RESUME_TIME) {
+                    mat.isStopped = true;
+                    mat.setY(mat.STOP_Y); // 정확히 150에 고정
+                    System.out.println("수프 정지");
+                }
+
+                // 2. 재개 조건: 75.5초가 지났을 때
+                if (mat.isStopped && progressTime >= SOUP_RESUME_TIME) {
+                    mat.isStopped = false;
+                    System.out.println("수프 재개");
+                }
+
+            }
+            //System.out.println("현재 시간: " + StageManager.progressTime);
+            //System.out.println("낙하 시작 시간: " + mat.actualDropStartTime);
             // --- [기존 로직: 재료 이동] ---
-            if (progressTime >= mat.actualDropStartTime) {
+            if (StageManager.progressTime >= mat.actualDropStartTime) {
+                //System.out.println(mat.matType);
+                //System.out.println(mat.isSoup);
                 mat.drop();
             }
 
             // --- [추가 로직: 화면 이탈 확인 및 제거] ---
-
             // ⭐️ 재료가 화면 밖(Y축 기준)으로 완전히 벗어났는지 확인
             final int SCREEN_HEIGHT = this.getHeight(); // 패널의 현재 높이를 가져옴
             final int MATERIAL_HEIGHT = 300; // 재료 이미지의 높이 (실제 값으로 대체 필요)
@@ -735,6 +623,171 @@ public class SpaceStage3 extends SpaceAnimation {
                 continue; // 제거 후 다음 반복으로 이동
             }
         }
+    }
+
+    @Override
+    public void updateByMusicTime(int t) {
+        super.updateByMusicTime(t); // SpaceAnimation의 점수 업데이트 및 기본 로직 호출
+
+        this.progressTime = t;
+
+        // 53.5초에 한 번만 켜기 (표시 시간은 1.5초 예시)
+        if (!bannerShown && t >= toJudgeMs(53500)) {
+            bannerShown = true;
+            bannerVisible = true;
+            bannerHideAtMs = t + 1500; // 1.5초 뒤 자동 숨김
+            repaint();
+        }
+
+        // 자동 숨김
+        if (bannerVisible && t >= bannerHideAtMs) {
+            bannerVisible = false;
+            repaint();
+        }
+
+        // ✅ 외계인 손 자동 동작 타이밍 확인 (ALIEN_PRESS_TIMES_INT 사용)
+        for (int pressTime : ALIEN_PRESS_TIMES_INT) {
+            if (t >= pressTime && t < pressTime + 50) { // 50ms동안 가이드 동작
+                if (currentAlien == alien1)
+                    currentAlien = alien2;
+                break;
+            }
+        }
+
+        for (int releaseTime : ALIEN_RELEASE_TIMES) {
+            if (t >= releaseTime && t < releaseTime + 50) {
+                if (currentAlien == alien2)
+                    currentAlien = alien1;
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void drawStageObjects(Graphics g) {
+        // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
+        g.drawImage(currentUser, 0, 0, null);
+
+        // 2. 선의 색상 설정 (예: 빨간색)
+        g.setColor(Color.RED);
+
+
+        // 4. 선 그리기
+        // 화면의 가장 왼쪽(0)부터 가장 오른쪽(getWidth())까지 선을 그립니다.
+        // JUDGMENT_LINE_Y는 150입니다.
+        int screenWidth = getWidth(); // SpaceStage3의 너비 (Panel의 너비)
+        int yPos = JUDGEMENT_TARGET_Y;
+
+        g.drawLine(0, yPos, screenWidth, yPos);
+
+        // 배너 오버레이 (맨 위)
+        if (bannerVisible && stage3Banner != null) {
+            Graphics2D g2 = (Graphics2D) g.create();
+
+            // 원하는 크기 (픽셀 단위)
+            int targetWidth = 300; // 폭
+            int targetHeight = 250; // 높이
+
+            // 화면 중앙 정렬
+            int x = (getWidth() - targetWidth) / 2;
+            int y = 50; // 위에서 조금 아래쪽
+
+            // 고화질 렌더링 (픽셀 깨짐 방지)
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+            // 이미지 그리기
+            g2.drawImage(stage3Banner, x, y, targetWidth, targetHeight, null);
+            g2.dispose();
+        }
+
+        // ✅ 외계인 손을 왼쪽 y축 중간에 작게 그립니다.
+        if (currentAlien != null) {
+            g.drawImage(currentAlien, 0, 0, getWidth(), getHeight(), null);
+        }
+
+        for (int i = 0; i < matList.size(); i++) {
+            Material mat = matList.get(i);
+            mat.screenDraw(g);
+        }
+
+        // 잔해(Fragment) 리스트 그리기
+        for (Material frag : fragmentList) {
+            frag.screenDraw(g);
+        }
+
+        if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
+
+
+    }
+
+    @Override
+    public Image getCannon() {
+        return cannon;
+    }
+
+    @Override
+    protected void changeStageImageOnPress() {
+        // ‼️ currentUser가 cat1일 때만 cat2로 변경
+        if (currentUser == cat1)
+            this.currentUser = cat2;
+    }
+
+    @Override
+    protected void changeStageImageOnRelease() {
+        // ‼️ currentUser가 cat2일 때만 cat1으로 변경
+        if (currentUser == cat2)
+            this.currentUser = cat1;
+    }
+
+    @Override
+    protected void processStageEvents(int t) {
+        // ‼️ 이벤트 타이밍에 따라 currentAlien (외계인 손)의 보이기/숨기기 및 이미지를 제어합니다.
+
+        // 1. 초기화 (초기 상태)
+        if (t < ALIEN_APPEAR_TIME_1 && currentAlien != null) {
+            currentAlien = null;
+        }
+
+        // 2. 외계인 손 등장 및 이미지 변경 로직
+        // 외계인 손이 등장하는 시점에 alien1로 설정
+        if (!event1Triggered && t >= ALIEN_APPEAR_TIME_1) {
+            event1Triggered = true;
+            currentAlien = alien1;
+        }
+        if (!event2Triggered && t >= ALIEN_APPEAR_TIME_2) {
+            event2Triggered = true;
+            currentAlien = alien1;
+        }
+        if (!event3Triggered && t >= ALIEN_APPEAR_TIME_3) {
+            event3Triggered = true;
+            currentAlien = alien1;
+        }
+        if (!event4Triggered && t >= ALIEN_APPEAR_TIME_4) {
+            event4Triggered = true;
+            currentAlien = alien1;
+        }
+        if (!event5Triggered && t >= ALIEN_APPEAR_TIME_5) {
+            event5Triggered = true;
+            currentAlien = alien1;
+        }
+        if (!event6Triggered && t >= ALIEN_APPEAR_TIME_6) {
+            event6Triggered = true;
+            currentAlien = alien1;
+        }
+        if (!event7Triggered && t >= ALIEN_APPEAR_TIME_7) {
+            event7Triggered = true;
+            currentAlien = alien1;
+        }
+        if (!event8Triggered && t >= ALIEN_APPEAR_TIME_8) {
+            event8Triggered = true;
+            currentAlien = alien1;
+        }
+    }
+
+    @Override
+    protected boolean isTimeInputBlocked() {
+        // ‼️ 입력 차단 로직 제거 요청에 따라 항상 false 반환
+        return false;
     }
 
 }
@@ -771,6 +824,14 @@ class Material {
     private double xSpeed, ySpeed;
 
     public boolean isFragment = false;
+
+    // ✅ [추가] 수프 전용 필드
+    public final int STOP_Y = 150; // 멈출 Y 좌표
+    public final int REQUIRED_HITS = 5; // 필요한 클릭 횟수
+
+    public boolean isSoup = false; // 수프 재료인지 여부
+    public boolean isStopped = false; // 현재 멈춰있는지
+    public int currentHits = 0; // 현재 성공한 클릭 횟수 (멈춰있을 때만 증가)
 
     public int getWidth() {
         return width;
@@ -813,6 +874,8 @@ class Material {
 
     public double rotationAngle = 0; // ⭐️ 회전 각도 (라디안 또는 도)
 
+    public boolean isDead = false; // 제거 대상으로 표시
+
     public Material(double x, double y, String matType, double xSpeed, double ySpeed, long targetArriveTime, long dropStartTime) {
         this.x = x; // 생성 좌표
         this.y = y;
@@ -823,8 +886,12 @@ class Material {
         this.actualDropStartTime = dropStartTime; // 👈 재료가 움직이기 시작할 시간
 
         this.isFragment = false;
+
+        this.isSoup = matType.equals("soup");
+
     }
 
+    // 파편 생성자
     public Material(Material original, boolean isFragment) {
         // 기본 속성 복사
         this.x = original.x;
@@ -836,7 +903,6 @@ class Material {
 
         this.isFragment = isFragment;
 
-        // 잔해는 targetArriveTime이나 actualDropStartTime이 불필요하므로 복사하지 않음.
     }
 
     public void screenDraw(Graphics g) {
@@ -1019,8 +1085,10 @@ class Material {
     }
 
     public void drop() {
-        x += this.xSpeed;
-        y += this.ySpeed;
+        if (!isStopped) {
+            x += this.xSpeed;
+            y += this.ySpeed;
+        }
     }
 
     public Rectangle getBounds() {
