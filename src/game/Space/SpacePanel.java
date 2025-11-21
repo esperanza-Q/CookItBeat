@@ -15,6 +15,17 @@ public class SpacePanel extends JPanel {
         SpaceStage1 stage1 = new SpaceStage1();
         currentStage = stage1; // 현재 스테이지 참조
 
+        // ----------GamFrame에서 SpacePanel로 이동한 코드들
+        // ✅ 게임 시작 시 음악 & 기습 여부 설정
+        StageManager.initializeStage();
+
+        // ✅ 확인 출력 (개발 중 디버그용)
+        System.out.println("[선택된 음악 index] " + StageManager.musicIndex);
+        System.out.println("[기습 활성 여부] " + StageManager.ambushEnabled);
+
+        // ✅ StageManager를 통해 음악 스레드를 한 번만 안전하게 시작
+        StageManager.startMusicAndTimer();
+
         // ✅ StageManager에 현재 스테이지 등록 및 애니메이션 시작
         StageManager.setCurrentStage(stage1);
         stage1.setLayout(null);
