@@ -21,6 +21,9 @@ public class StageManager {
 
     private static SpaceAnimation currentStage;
 
+    // 스테이지3에서 사용할 전체 진행 시각
+    public static int progressTime = 0;
+
     // ✅ [추가] 스테이지 간에 공유할 점수 변수
     private static int totalScore = 0;
 
@@ -83,6 +86,7 @@ public class StageManager {
             syncTimer = new Timer(16, e -> {
                 if (spaceBackgroundMusic != null && spaceBackgroundMusic.isAlive()) {
                     int t = spaceBackgroundMusic.getTime();
+                    progressTime = t; // stage3에서 사용
 
                     // 현재 활성화된 스테이지에만 updateByMusicTime 호출
                     SpaceAnimation current = getCurrentStage();

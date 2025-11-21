@@ -78,7 +78,7 @@ public class SpaceAnimation extends JPanel {
     protected RhythmJudgementManager judgementManager;
     private Image[] judgementImages = new Image[3]; // PERFECT, GREAT, MISS 이미지
     private Image currentJudgementImage = null;
-    private String currentJudgementText = null;
+    protected String currentJudgementText = null;
     private Timer judgementTimer;
     private final int JUDGEMENT_DISPLAY_TIME_MS = 1000; // 판정 결과 표시 시간 (1초)
 
