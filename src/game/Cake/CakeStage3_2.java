@@ -3,11 +3,11 @@ package game.Cake;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-public class CakeStage2 extends CakeAnimation {
+public class CakeStage3_2 extends CakeAnimation {
 
     private CakePanel controller;
 
-    public CakeStage2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
+    public CakeStage3_2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
     }

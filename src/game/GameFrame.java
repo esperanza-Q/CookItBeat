@@ -1,5 +1,6 @@
 package game;
 
+import game.Cake.CakePanel;
 import game.Space.SpacePanel;
 import game.Space.StageManager;
 
@@ -83,7 +84,7 @@ public class GameFrame extends JFrame {
 
     public void showCakeScreen() {
         getContentPane().removeAll(); // 기존 화면 제거
-        // !! getContentPane().add(new CakePanel()); 뭘 불러야할지 모름! 스테이지 개발부터해야함!
+        getContentPane().add(new CakePanel());
         revalidate(); // 레이아웃 다시 계산
         repaint(); // 화면 다시 그리기
     }
