@@ -22,14 +22,14 @@ public class CakeStage3_2 extends CakeAnimation {
     };
 
     // ‼️ 6개의 판정 타이밍 가이드 이미지 각각의 고유 위치 정의
-    private static final int GUIDE_LIGHT_WIDTH = 100;
-    private static final int GUIDE_LIGHT_HEIGHT = 100;
+    private static final int GUIDE_LIGHT_WIDTH = 200;
+    private static final int GUIDE_LIGHT_HEIGHT = 200;
 
     private static final int[][] GUIDE_FIXED_POSITIONS = {
             // 크림 가이드 6개의 고유 위치 (예시 좌표, 실제 레이아웃에 맞게 수정 필요)
-            {300, 300}, {450, 300}, {700, 300}, {850, 300}, {1000, 300}, {1150, 300},
+            {400, 300}, {550, 300}, {700, 300}, {400, 400}, {550, 400}, {700, 400},
             // 딸기 가이드 6개의 고유 위치 (예시 좌표)
-            {300, 300}, {450, 300}, {700, 300}, {850, 300}, {1000, 300}, {1150, 300}
+            {400, 300}, {550, 300}, {700, 300}, {400, 400}, {550, 400}, {700, 400}
     };
 
     private static final long CREAM_GUIDE_START = 96140; // 크림 가이드 시작 (첫 번째 타이밍)
@@ -99,7 +99,10 @@ public class CakeStage3_2 extends CakeAnimation {
 
                         // guideLights[0]을 크림 가이드 6개 위치에 그립니다.
                         g2.drawImage(guideLights[0], x, y, GUIDE_LIGHT_WIDTH, GUIDE_LIGHT_HEIGHT, null);
+                        if(currentTime <= flashTime + 200)
+                            g2.drawImage(guideStick, x+GUIDE_LIGHT_WIDTH, y-GUIDE_LIGHT_HEIGHT, 500, 400, null);
                     }
+
                 }
             }
 
@@ -135,6 +138,8 @@ public class CakeStage3_2 extends CakeAnimation {
 
                         // guideLights[0]을 크림 가이드 6개 위치에 그립니다.
                         g2.drawImage(guideLights[0], x, y, GUIDE_LIGHT_WIDTH, GUIDE_LIGHT_HEIGHT, null);
+                        if(currentTime <= flashTime + 200)
+                            g2.drawImage(guideStick, x+GUIDE_LIGHT_WIDTH, y-GUIDE_LIGHT_HEIGHT-200, 250, 200, null);
                     }
                 }
             }
