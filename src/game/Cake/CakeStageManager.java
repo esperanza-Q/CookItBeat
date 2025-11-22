@@ -18,7 +18,7 @@ public class CakeStageManager {
     private static final String GAME_MUSIC_FILE = "cakeBackgroundMusic.mp3";
 
     private static final List<Long> STAGE_END_TIMES_MS = Arrays.asList(
-            40000L,  // Stage 1-1 종료 시간 (40초)
+            41000L,  // Stage 1-1 종료 시간 (40초)
             52000L,  // Stage 1-2 종료 시간 (9.5초)
             79000L, // Stage 2 종료 시간 (15.5초)
             88000L, // Stage 3-1 종료 시간 (20.8초)

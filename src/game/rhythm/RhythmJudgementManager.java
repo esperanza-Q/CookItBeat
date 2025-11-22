@@ -49,7 +49,7 @@ public class RhythmJudgementManager {
      * 플레이어의 입력 시간을 받아 판정을 수행합니다.
      * @param currentTimeMs 현재 음악 재생 시간 (밀리초)
      */
-    public void handleInput(int currentTimeMs) {
+    public int handleInput(int currentTimeMs) {
         long currentInputTime = (long) currentTimeMs; // int를 long으로 사용
 
         int closestIndex = -1;
@@ -101,11 +101,14 @@ public class RhythmJudgementManager {
                 lastJudgement = "GOOD";
                 score += 50;
             }
+            return closestIndex; // ‼️ 판정 성공 시 인덱스 반환
         } else {
             // 가장 가까운 정답이 판정 범위 밖에 있었을 경우 (MISS)
             // (이 로직은 입력이 들어올 때마다 호출되므로, 정확한 MISS 처리는 별도 로직이 필요할 수 있으나, 현재 코드 구조 유지)
             lastJudgement = "MISS";
             lastJudgementTime = currentInputTime;
+
+            return -1; // ‼️ 판정 실패 시 -1 반환
         }
     }
 

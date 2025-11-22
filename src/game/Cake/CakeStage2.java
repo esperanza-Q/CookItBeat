@@ -15,7 +15,7 @@ public class CakeStage2 extends CakeAnimation {
     @Override
     protected void loadStageSpecificResources() {
         // 가이드 카드병정 이미지 로드
-        guideCardImage = loadImage("../images/cakeStage_image/stage1/Card01_stage1-1.png");
+        guideCardImage1 = loadImage("../images/cakeStage_image/stage1/Card01_stage1-1.png");
 
         // 재료 이미지 로드 (필요없지만 필드가 CakeAnimation에 남아있으므로 로딩만 유지)
         strawberryBodyImage = loadImage("../images/cakeStage_image/stage1/Strawberry_stage1-1.png");
@@ -27,9 +27,9 @@ public class CakeStage2 extends CakeAnimation {
 //
 
         // 🖼️ 가이드 카드병정 이미지
-        if (guideCardImage != null) {
+        if (guideCardImage1 != null) {
 
-            g2.drawImage(guideCardImage, 0,0, getWidth(), getHeight(), null);
+            g2.drawImage(guideCardImage1, 0,0, getWidth(), getHeight(), null);
         }
 
         // --------------------------------------------------------
