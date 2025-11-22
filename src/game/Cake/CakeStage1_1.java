@@ -43,7 +43,7 @@ public class CakeStage1_1 extends CakeAnimation {
             17371L, 17723L, 18164L, 18590L, 18980L,
             24200L, 24610L, 25010L, 25450L, 25820L, 26240L, 26700L,
             31127L, 31241L, 31480L, 31698L, 31865L, 32020L, 32300L, 32510L, 32720L, 33200L, 33646L,
-            38003L, 38310L, 38808L, 39161L, 39400L, 39560L, 40048L, 40518L
+            38003L, 38310L, 38808L, 39161L, 39560L, 39780L, 40048L, 40518L
     );
 
     // ⚔️ [타이밍] 그림자 및 딸기 일괄 소멸 타이밍
@@ -61,7 +61,7 @@ public class CakeStage1_1 extends CakeAnimation {
     private static final int SYNC_OFFSET_MS = -50;
 
     // ⚔️ [핵심 수정] 유저 입력 판정 전용 오프셋 (30ms로 설정)
-    private static final int JUDGEMENT_OFFSET_MS = -180;
+    private static final int JUDGEMENT_OFFSET_MS = 0;
 
     // ⚔️ [제거] 낙하 관련 상수 모두 제거
     // private static final int STRAWBERRY_FALL_DURATION_MS = 20;
@@ -147,7 +147,7 @@ public class CakeStage1_1 extends CakeAnimation {
         if (nextStrawberryCreationIndex < STRAWBERRY_CREATION_TIMES_MS.size() && !shadowTargetPositions.isEmpty()) {
             Long creationTime = STRAWBERRY_CREATION_TIMES_MS.get(nextStrawberryCreationIndex);
 
-            if (adjustedMusicTimeMs >= creationTime) {
+            if (adjustedMusicTimeMs >= creationTime-200) {
                 // ‼️ [동기화] strawberryList 수정 전 동기화
                 synchronized (strawberryList) {
                     spawnStrawberryNote(creationTime);
@@ -216,8 +216,9 @@ public class CakeStage1_1 extends CakeAnimation {
         strawberryList.add(new StrawberryNote(
                 strawberryBodyImage,
                 strawberryTopImage,
-                spawnTime, // 생성 시간을 startTimeMs로 사용
-                targetPos
+                spawnTime,
+                targetPos,
+                nextStrawberryCreationIndex // ‼️ 인덱스를 전달
         ));
     }
 
@@ -326,23 +327,18 @@ public class CakeStage1_1 extends CakeAnimation {
 
             // 3. 판정이 성공했고, 컷팅할 딸기 노트를 찾아 상태 업데이트
             if (judgedIndex != -1) {
-                // ‼️ [핵심 수정] 판정된 정답 타이밍 (judgedTime)을 가져옵니다.
-                long judgedTime = STRAWBERRY_CREATION_TIMES_MS.get(judgedIndex);
+                // ‼️ [핵심 수정] 판정된 인덱스 judgedIndex를 사용하여 딸기 노트를 찾습니다.
 
                 // 4. 판정 결과 문자열에 따라 컷팅 상태 업데이트
-                boolean isCut = false;
-
-                if (judgementResultString.equals("GOOD") ||
+                boolean isCut = judgementResultString.equals("GOOD") ||
                         judgementResultString.equals("GREAT!") ||
-                        judgementResultString.equals("PERFECT!"))
-                {
-                    isCut = true;
-                }
+                        judgementResultString.equals("PERFECT!");
 
                 if (isCut) {
                     synchronized (strawberryList) {
+                        // ‼️ judgedIndex와 동일한 인덱스를 가진 노트를 찾아 컷팅
                         for (StrawberryNote strawberry : strawberryList) {
-                            if (strawberry.getStartTimeMs() == judgedTime) {
+                            if (strawberry.getNoteIndex() == judgedIndex) {
                                 strawberry.setCut(true);
                                 break;
                             }
