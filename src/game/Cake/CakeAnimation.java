@@ -150,10 +150,23 @@ public abstract class CakeAnimation extends JPanel {
 
         if(scoreFont != null) {
             g2.setFont(scoreFont.deriveFont(Font.BOLD, 25f));
-            String scoreStr = "0";
+            // 💡 [핵심 수정] CakeStageManager에서 누적 점수를 가져옵니다.
+            int scoreValue = CakeStageManager.getCumulativeScore();
+            String scoreStr = String.format("%d", scoreValue);
+
             FontMetrics fm = g2.getFontMetrics();
-            int scoreX = BAR_X + BAR_WIDTH - 80 ;
-            g2.drawString(scoreStr, scoreX, BAR_Y + 35);
+
+            // 점수 위치 설정
+            int scoreX = BAR_X + BAR_WIDTH - fm.stringWidth(scoreStr) - 20 ; // 오른쪽 정렬
+            int scoreY = BAR_Y + 30;
+
+            // 그림자 효과
+            g2.setColor(new Color(0, 0, 0, 150));
+            g2.drawString(scoreStr, scoreX -2, scoreY + 2);
+
+            // 실제 점수 그리기
+            g2.setColor(Color.WHITE);
+            g2.drawString(scoreStr, scoreX, scoreY);
         }
 
         // 2. 🎯 판정 이미지 표시 로직

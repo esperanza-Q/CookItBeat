@@ -83,6 +83,16 @@ public class CakeStageManager {
         cumulativeScore = 0;
     }
 
+    // 💡 [추가] 누적 점수 설정/획득 Getter/Setter
+    public static int getCumulativeScore() {
+        return cumulativeScore;
+    }
+
+    // ‼️ [핵심 수정] 판정 매니저의 점수를 받아 전체 누적 점수를 업데이트
+    public static void setCumulativeScore(int newScore) {
+        cumulativeScore = newScore;
+    }
+
     // ‼️ [복구] CakeAnimation에서 시간을 가져오기 위한 Getter
     public static Music getMusic() { return currentMusic; }
     public static int getCurrentStage() { return currentStage; }

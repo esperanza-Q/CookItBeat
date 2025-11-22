@@ -40,10 +40,10 @@ public class CakeStage1_1 extends CakeAnimation {
 
     // ⚔️ [타이밍] 딸기 생성 (유저 정답) 타이밍
     private static final List<Long> STRAWBERRY_CREATION_TIMES_MS = Arrays.asList(
-            17371L, 17723L, 18164L, 18590L, 19063L,
-            24159L, 24591L, 25017L, 25436L, 25953L, 26406L, 26800L,
-            31127L, 31241L, 31508L, 31698L, 31865L, 31972L, 32329L, 32497L, 32862L, 33235L, 33646L,
-            38003L, 38310L, 38808L, 39161L, 39577L, 39740L, 40048L, 40518L
+            17371L, 17723L, 18164L, 18590L, 18980L,
+            24200L, 24610L, 25010L, 25450L, 25820L, 26240L, 26700L,
+            31127L, 31241L, 31480L, 31698L, 31865L, 32020L, 32300L, 32510L, 32720L, 33200L, 33646L,
+            38003L, 38310L, 38808L, 39161L, 39400L, 39560L, 40048L, 40518L
     );
 
     // ⚔️ [타이밍] 그림자 및 딸기 일괄 소멸 타이밍
@@ -312,6 +312,10 @@ public class CakeStage1_1 extends CakeAnimation {
 
             // 1. 판정 실행 및 판정 성공 인덱스 획득
             int judgedIndex = judgementManager.handleInput((int)clickTime);
+
+            // 💡 [핵심 추가] judgementManager의 현재 점수를 StageManager에 저장
+            int currentTotalScore = judgementManager.getScore();
+            CakeStageManager.setCumulativeScore(currentTotalScore);
 
             // 2. 판정 결과 문자열 획득
             String judgementResultString = judgementManager.getLastJudgement();
