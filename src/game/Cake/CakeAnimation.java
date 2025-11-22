@@ -210,6 +210,8 @@ public abstract class CakeAnimation extends JPanel {
         private final Image topImage;
         private final long startTimeMs; // ‼️ 외부에 노출되어야 함
 
+        private final int noteIndex; // ‼️ [추가] 이 노트가 몇 번째 노트인지 저장
+
         // 딸기가 생성될 위치 (그림자 위치)
         private final Point targetPos;
 
@@ -220,11 +222,17 @@ public abstract class CakeAnimation extends JPanel {
         // ‼️ [추가] 컷팅 시 꼭지가 분리될 거리 (Y축 기준)
         private static final int CUT_OFFSET_Y = 50;
 
-        public StrawberryNote(Image bodyImage, Image topImage, long startTimeMs, Point targetPos) {
+        public StrawberryNote(Image bodyImage, Image topImage, long startTimeMs, Point targetPos, int noteIndex) {
             this.bodyImage = bodyImage;
             this.topImage = topImage;
             this.startTimeMs = startTimeMs;
             this.targetPos = targetPos;
+            this.noteIndex = noteIndex; // ‼️ [추가] 초기화
+        }
+
+        // ‼️ [추가] 인덱스 Getter
+        public int getNoteIndex() {
+            return noteIndex;
         }
 
         // ‼️ [추가] 딸기의 생성 시간을 반환하는 Getter
