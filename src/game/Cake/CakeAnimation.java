@@ -24,6 +24,14 @@ public abstract class CakeAnimation extends JPanel {
     protected Image playerToolImage;
     protected Image shadowImage;
 
+    protected Image decoStrawberry; // 플레이어 도구, 데코 딸기
+    protected Image decoCream;
+    protected Image[] guideLights;
+    protected Image guideStick;
+    protected Image creamPiping1;
+    protected Image creamPiping2; // 플레이어 도구 짤주머니
+
+    protected int currentMusicTimeMs = 0; // 현재 음악 재생 시간
     protected Image strawberryTopImage;
 
     // ‼️ [추가] 판정 이미지 관련 필드
@@ -31,7 +39,6 @@ public abstract class CakeAnimation extends JPanel {
     protected String lastJudgementResult = "NONE"; // 마지막 판정 결과 (문자열)
     protected long judgementDisplayStartTime = 0;   // 판정 이미지가 표시되기 시작한 시간
 
-    protected int currentMusicTimeMs = 0;
     private final int GLOBAL_JUDGEMENT_OFFSET_MS = -120;
     private static final int JUDGEMENT_DISPLAY_DURATION = 600; // 0.8초간 표시
 
