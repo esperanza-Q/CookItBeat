@@ -82,7 +82,7 @@ public class SpaceAnimation extends JPanel {
     private Timer judgementTimer;
     private final int JUDGEMENT_DISPLAY_TIME_MS = 1000; // 판정 결과 표시 시간 (1초)
 
-    private final int GLOBAL_JUDGEMENT_OFFSET_MS = -60;
+    private final int GLOBAL_JUDGEMENT_OFFSET_MS = -300;
 
     // ✅ [추가] 점수 오프셋 (이전 스테이지에서 이월된 점수)
     private int scoreOffset = 0;
@@ -223,6 +223,8 @@ public class SpaceAnimation extends JPanel {
 
                     startForwardAnimation();
 
+
+
                     // ✅ [수정] 스페이스바 로직(판정 처리 포함)을 처리하는 protected 메서드 호출
                     processSpaceKeyPressLogic();
                 }
@@ -282,6 +284,13 @@ public class SpaceAnimation extends JPanel {
 
             // ‼️ 오프셋 적용된 음악 시간 계산: 입력 시간을 47ms 앞으로 당겨서 보정
             int adjustedMusicTime = currentMusicTimeMs + GLOBAL_JUDGEMENT_OFFSET_MS;
+
+            // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
+            System.out.println("--------------------------------------------------");
+            System.out.println("[INPUT] Space Bar Pressed!");
+            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
+            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
+            System.out.println("--------------------------------------------------");
 
             // ‼️ 조정된 시간을 판정 함수에 전달
             judgementManager.handleInput(adjustedMusicTime);
