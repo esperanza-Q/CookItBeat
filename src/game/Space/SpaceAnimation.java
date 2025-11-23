@@ -329,6 +329,22 @@ public class SpaceAnimation extends JPanel {
         // SpaceStage1에서 이 메서드를 오버라이드하여 물총 애니메이션을 추가할 것입니다.
     }
 
+
+    protected void registerForcedMiss() {
+        // 판정 이미지 / 텍스트만 직접 세팅해 주면 됨
+        currentJudgementImage = judgementImages[2]; // MISS 이미지
+        currentJudgementText  = "MISS";
+
+        if (judgementTimer.isRunning()) {
+            judgementTimer.stop();
+        }
+        judgementTimer.start();   // 1초 동안 MISS 띄우기
+
+        repaint();
+    }
+
+
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
