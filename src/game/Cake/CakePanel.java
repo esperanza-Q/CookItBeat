@@ -23,6 +23,7 @@ public class CakePanel extends JPanel implements Runnable {
     private static final String STAGE1_1_NAME = "Stage1-1";
     private static final String STAGE1_2_NAME = "Stage1-2";
     private static final String STAGE2_NAME = "Stage2";
+    private static final String STAGE2_OVEN_NAME = "Stage2_oven";
     private static final String STAGE3_1_NAME = "Stage3-1";
     private static final String STAGE3_2_NAME = "Stage3-2";
 
@@ -171,8 +172,10 @@ public class CakePanel extends JPanel implements Runnable {
                     } else if (nextStageIndex == 3) {
                         nextStageCardName = STAGE2_NAME;
                     } else if (nextStageIndex == 4) {
-                        nextStageCardName = STAGE3_1_NAME;
+                        nextStageCardName = STAGE2_OVEN_NAME;
                     } else if (nextStageIndex == 5) {
+                        nextStageCardName = STAGE3_1_NAME;
+                    } else if (nextStageIndex == 6) {
                         nextStageCardName = STAGE3_2_NAME;
                     }
 
@@ -223,6 +226,8 @@ public class CakePanel extends JPanel implements Runnable {
             }
             else if (cardName.equals(STAGE2_NAME)) {
                 nextStage = new CakeStage2(this, stageData, totalScore);
+            } else if (cardName.equals(STAGE2_OVEN_NAME)) {
+                nextStage = new CakeStage2_oven(this, stageData, totalScore);
             } else if (cardName.equals(STAGE3_1_NAME)) {
                 nextStage = new CakeStage3_1(this, stageData, totalScore);
             } else if (cardName.equals(STAGE3_2_NAME)) {
