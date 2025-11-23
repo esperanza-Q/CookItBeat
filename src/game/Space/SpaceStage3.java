@@ -702,7 +702,7 @@ public class SpaceStage3 extends SpaceAnimation {
 
         // ✅ 외계인 손을 왼쪽 y축 중간에 작게 그립니다.
         if (currentAlien != null) {
-            g.drawImage(currentAlien, 0, 0, getWidth(), getHeight(), null);
+            g.drawImage(currentAlien, 0, -10, getWidth(), getHeight(), null);
         }
 
         for (int i = 0; i < matList.size(); i++) {
