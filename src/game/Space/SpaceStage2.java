@@ -80,6 +80,16 @@ public class SpaceStage2 extends SpaceAnimation {
 
     };
 
+    // 플레이어 입력 보정 (ms)
+    // +면 판정선을 뒤로(늦게), -면 앞으로(일찍) 이동
+    private static final int[] USER_INPUT_BIAS_MS = {
+            -40,  // musicIndex 0 : 평균 40ms 정도 일찍 침
+            0,    // musicIndex 1 : 아직 데이터 없으면 0
+            80,   // musicIndex 2 : 이전 로그 기준 80ms 정도 늦게 침
+            0     // musicIndex 3
+    };
+
+
     // 🔹 각 시간에 어떤 키를 보여줄지
     private static final int[] GUIDE_KEYS = {
             KeyEvent.VK_A,   // 27.0초에는 A 키 가이드
@@ -88,8 +98,10 @@ public class SpaceStage2 extends SpaceAnimation {
 
     };
 
-    // 🔹 ms 단위로 변환 (슬로우 보정 포함해서 쓰고 싶으면 toJudgeMs 사용)
-    private static final int[] GUIDE_TIMES_MS = buildJudgeTimes(GUIDE_TIMES_SEC);
+    // 👉 인스턴스용 ms 배열
+    private final int[] guideTimesMs;
+
+
 
     // 🔹 각 가이드가 화면에 유지될 시간 (ms)
     private static final int GUIDE_SHOW_DURATION_MS = 2500;  // 1.5초 동안 표시
@@ -154,7 +166,7 @@ public class SpaceStage2 extends SpaceAnimation {
 
     // 🔹 현재 시간 t 기준으로 "가장 가까운 노트 인덱스" 찾기
     private int getNearestNoteIndex(int t, int windowMs) {
-        int[] noteTimes = USER_PRESS_TIMES_INT;
+        int[] noteTimes = userPressTimesMs;
 
         int nearestIdx = -1;
         int nearestDiff = Integer.MAX_VALUE;
@@ -179,7 +191,7 @@ public class SpaceStage2 extends SpaceAnimation {
     }
 
 
-
+    private int[] noteKeys;
 
     // ======== 🔹 슬로우 구간 정보 (초 단위)
     private static final double SLOW1_END_SEC = 31.050;  // 슬로우1 끝
@@ -189,40 +201,63 @@ public class SpaceStage2 extends SpaceAnimation {
     private static final int OFFSET_AFTER_SLOW1_MS = 609;  // 0.609초
     private static final int OFFSET_AFTER_SLOW2_MS = 477;  // 0.477초
 
+    private static int safeMusicIndex() {
+        int idx = StageManager.musicIndex;
+        if (idx < 0 || idx >= USER_PRESS_TIMES_SEC_BY_MUSIC.length) {
+            idx = 0;
+        }
+        return idx;
+    }
+
+
     // 🔹 논리 시간(sec)을 실제 판정 시간(ms)로 변환
     private static int toJudgeMs(double tSec) {
         int base = (int) Math.round(tSec * 1000.0);
 
-        int idx = StageManager.musicIndex;  // 어떤 곡인지
-
-        // 아직 음악 선택 전(default -1)이면 그냥 원본 시간 사용
+        int idx = StageManager.musicIndex;
         if (idx < 0) {
             return base;
         }
 
+        int result = base;
+
         switch (idx) {
             case 0:
-                // 🎵 0번 곡: 슬로우 없음
-                return base;
+                // 0번 곡은 슬로우 없음
+                break;
 
             case 1:
-                // 🎵 1번 곡: 슬로우 1만 적용 (31.050 이후 +0.609초)
                 if (tSec > SLOW1_END_SEC) {
-                    return base + OFFSET_AFTER_SLOW1_MS;
+                    result = base + OFFSET_AFTER_SLOW1_MS;
                 }
-                return base;
+                break;
 
             case 2:
-                // 🎵 2번 곡: 슬로우 2만 적용 (48.055 이후 +0.477초)
                 if (tSec > SLOW2_END_SEC) {
-                    return base + OFFSET_AFTER_SLOW2_MS;
+                    result = base + OFFSET_AFTER_SLOW2_MS;
                 }
-                return base;
+                break;
 
             default:
-                // 🎵 그 외(3번 등): 일단 슬로우 없음 버전으로 처리
-                return base;
+                break;
         }
+
+        // ✅ 마지막에 사용자 입력 편차 보정 적용
+        if (idx >= 0 && idx < USER_INPUT_BIAS_MS.length) {
+            result += USER_INPUT_BIAS_MS[idx];
+        }
+
+        return result;
+    }
+
+
+    // 슬로우 보정 없이 초 → ms 만
+    private static int[] toMs(double[] secs) {
+        int[] result = new int[secs.length];
+        for (int i = 0; i < secs.length; i++) {
+            result[i] = (int) Math.round(secs[i] * 1000.0);
+        }
+        return result;
     }
 
 
@@ -261,6 +296,9 @@ public class SpaceStage2 extends SpaceAnimation {
     private int boomFrameIndex = 0;
     private final int BOOM_ANIMATION_DELAY = 50; // 공기포 이미지 전환 속도 (ms)
 
+
+    private final int inputEnableTimeMs;
+
     private boolean leftBoomActive = false;
     private boolean rightBoomActive = false;
 
@@ -286,87 +324,171 @@ public class SpaceStage2 extends SpaceAnimation {
 
     // 외계인 손 자동 동작 타이밍
     //외계인이 자동으로 “눌렀다”고 연출되는 시
-    private static final double[] ALIEN_PRESS_TIMES_SEC = {
-            28.285, 28.505, 28.725,
-            31.280, 31.720,
-            35.146, 35.366, 35.576,
-            35.577,
-            41.793, 42.002, 43.282, 43.502, 43.722, 43.942, 45.435, 45.859, 46.283
+    // 곡별 외계인 손 타이밍 (초 단위)
+    private static final double[][] ALIEN_PRESS_TIMES_SEC_BY_MUSIC = {
+            // musicIndex = 0용
+            {
+                    28.285, 28.505, 28.725,
+                    31.675, 31.995,
+                    35.146, 35.366, 35.576,
+                    41.793, 42.002, 43.282, 43.502, 43.722, 43.942, 45.135, 45.559, 46.083
+            },
+            // musicIndex = 1용 (변화O)
+            {
+                    28.285, 28.505, 28.725,
+                    32.100, 32.320,
+                    35.055, 35.375, 35.495,
+                    42.202, 42.411, 43.691, 43.911, 44.131, 44.351, 45.944, 46.268, 46.692
+            },
+            // musicIndex = 2용 (4번쨰 변화)
+            {
+                    28.285, 28.505, 28.725,
+                    31.675, 31.995,
+                    35.146, 35.366, 35.576,
+                    41.793, 42.002, 43.282, 43.502, 43.722, 43.942, 45.435, 45.859, 46.583
+            },
+            // musicIndex = 3용
+            {
+                    28.285, 28.505, 28.725,
+                    31.675, 31.995,
+                    35.146, 35.366, 35.576,
+                    41.793, 42.002, 43.282, 43.502, 43.722, 43.942, 45.135, 45.559, 46.083
+            }
     };
 
-    private final int[] ALIEN_PRESS_TIMES_INT = buildJudgeTimes(ALIEN_PRESS_TIMES_SEC);
+
+    // ✅ 인스턴스용
+    private final int[] alienPressTimesMs;
 
 
     // ✅ 판정 정답 타이밍 (SpaceAnimation에 넘기는 타이밍)
     // ✅ 논리적인 노트 시간 (초 단위) — DAW에서 읽은 값 그대로
-    private static final double[] USER_PRESS_TIMES_SEC = {
-            // 예시: 네가 적어둔 초 단위 타이밍들(삡/딴 구간 중 "판정용" 것들만)
-            28.285, 28.505, 28.725,
-            29.983, 30.203, 30.423,
-            31.280, 31.720,
-            33.410, 33.850,
-            35.146, 35.366, 35.576,
-            37.718, 37.928, 38.138,
-            48.649, 48.858,
-            50.138, 50.358, 50.578, 50.798,
-            52.290, 52.715, 53.139
+    // 음악마다 다른 리듬 판정 타이밍 (초 단위)
+    private static final double[][] USER_PRESS_TIMES_SEC_BY_MUSIC = {
+
+            // musicIndex = 0
+            {
+                    29.983, 30.203, 30.423,
+                    33.410, 33.850,
+                    37.718, 37.928, 38.138,
+                    48.649, 48.858, 50.138, 50.358, 50.578, 50.798, 52.290, 52.715, 53.139
+            },
+
+            // musicIndex = 1
+            {
+                    29.983, 30.203, 30.423,
+                    34.019, 34.459,
+                    38.327, 38.537, 38.747,
+                    49.258, 49.467, 50.747, 50.967, 51.187, 51.407, 52.899, 53.324, 53.748
+
+            },
+
+            // musicIndex = 2
+            {
+                    29.983, 30.203, 30.423,
+                    33.410, 33.850,
+                    37.718, 37.928, 38.138,
+                    49.126, 49.335, 50.615, 50.835, 51.055, 51.275, 52.767, 53.192, 53.616
+
+            },
+
+            // musicIndex = 3
+            {
+                    29.983, 30.203, 30.423,
+                    33.410, 33.850,
+                    37.718, 37.928, 38.138,
+                    48.649, 48.858, 50.138, 50.358, 50.578, 50.798, 52.290, 52.715, 53.139
+            }
     };
 
-    // ✅ 실제 판정에 쓰는 ms 배열 (슬로우 보정 적용된 값)
-    private static final int[] USER_PRESS_TIMES_INT = buildJudgeTimes(USER_PRESS_TIMES_SEC);
 
-    // ✅ 실제 플레이가 시작되는 시간(ms) — 29.983초부터 판정 허용
-    private static final int INPUT_ENABLE_TIME_MS = USER_PRESS_TIMES_INT[0] - 50;
-// (약간 여유 주고 싶으면 -50, 딱 맞추고 싶으면 그대로 USER_PRESS_TIMES_INT[3])
+    // ✅ 인스턴스용 ms 배열
+    private final int[] userPressTimesMs;
+
+
 
 
     // 딴 패턴이 시작하는 시점(첫 딴 타이밍, 초 단위)
-    private static final double[] DDAN_START_TIMES_SEC = {
-            29.983,  // 30초 딴딴딴
-            33.410,  // 33초 딴딴
-            37.718,  // 37초 딴딴딴
-            48.649   // 47초 딴딴...
+    private static final double[][] DDAN_START_TIMES_SEC_BY_MUSIC = {
+
+            // musicIndex 0
+            {
+                    29.983, 33.410, 37.718, 48.649
+            },
+
+            // musicIndex 1
+            {
+                    29.983, 33.410, 37.718, 48.649
+            },
+
+            // musicIndex 2
+            {
+                    29.983, 33.410, 37.718, 48.649
+            },
+
+            // musicIndex 3
+            {
+                    29.983, 33.410, 37.718, 48.649
+            },
     };
 
-    // 슬로우 보정이 적용된 ms 타이밍
-    private static final int[] DDAN_START_TIMES = buildJudgeTimes(DDAN_START_TIMES_SEC);
+
+
+
+    // 외계인 손 release
+    private final int[] alienReleaseTimes;
+
 
     // ✅ 각 노트 타이밍에 대한 "정답 키" 배열
 // USER_PRESS_TIMES_INT와 길이가 같아야 함
     // USER_PRESS_TIMES_SEC와 길이 100% 동일해야 함
-    private static final int[] NOTE_KEYS = {
-            // 28.285, 28.505, 28.725
-            KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,
+    // 곡마다 정답 키 패턴
+    private static final int[][] NOTE_KEYS_BY_MUSIC = {
 
-            // 29.983, 30.203, 30.423
-            KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,
+            // musicIndex = 0
+            {
+                    KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
+                    KeyEvent.VK_D, KeyEvent.VK_D,                 // 3,4   → D 로 변경
+                    KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W   // 14,15,16 → W
+            },
 
-            // 31.280, 31.720
-            KeyEvent.VK_A, KeyEvent.VK_A,
+            // musicIndex = 1
+            {
+                    KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
+                    KeyEvent.VK_D, KeyEvent.VK_D,             // 3,4   → D 로 변경
+                    KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W   // 14,15,16 → W
+            },
 
-            // 33.410, 33.850
-            KeyEvent.VK_A, KeyEvent.VK_A,
+            // musicIndex = 2
+            {
+                    KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
+                    KeyEvent.VK_D, KeyEvent.VK_D,             // 3,4   → D 로 변경
+                    KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W   // 14,15,16 → W
+            },
 
-            // 35.146, 35.366, 35.576
-            KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,
-
-            // 37.718, 37.928, 38.138
-            KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,
-
-            // 48.649, 48.858
-            KeyEvent.VK_W, KeyEvent.VK_W,
-
-            // 50.138, 50.358, 50.578, 50.798
-            KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,
-
-            // 52.290, 52.715, 53.139
-            KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W
+            // musicIndex = 3
+            {
+                    KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
+                    KeyEvent.VK_D, KeyEvent.VK_D,           // 3,4   → D 로 변경
+                    KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
+                    KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W   // 14,15,16 → W
+            },
     };
 
 
     // 외계인 손이 alien2로 바뀐 후 돌아오는 타이밍
     private final int ALIEN_RELEASE_DELAY_MS = 50;
-    private final int[] ALIEN_RELEASE_TIMES;
 
     // int[] -> long[] 변환 헬퍼
     private static long[] convertToLongArray(int[] array) {
@@ -378,20 +500,47 @@ public class SpaceStage2 extends SpaceAnimation {
     }
 
 
-
-
-
     public SpaceStage2() {
-        // 판정 타이밍을 부모에게 전달
-        super(convertToLongArray(USER_PRESS_TIMES_INT));
+        // ✅ super는 "무조건" 첫 줄 + static 메서드/상수만 사용
+        super(convertToLongArray(
+                buildJudgeTimes(
+                        USER_PRESS_TIMES_SEC_BY_MUSIC[safeMusicIndex()]
+                )
+        ));
+
+        // ⬇️ 이제 여기부터는 자유롭게 지역 변수 써도 됨
+
+        int mi = safeMusicIndex();
+
+        // 음악별 USER TIME 선택
+        double[] selectedUserTimes = USER_PRESS_TIMES_SEC_BY_MUSIC[mi];
+        this.userPressTimesMs = buildJudgeTimes(selectedUserTimes);
+
+        // 음악별 NOTE_KEYS 선택
+        this.noteKeys = NOTE_KEYS_BY_MUSIC[mi];
+
+        // ---- 여기부터 곡별 외계인 타이밍 선택 ----
+        int idx = StageManager.musicIndex;
+        if (idx < 0 || idx >= ALIEN_PRESS_TIMES_SEC_BY_MUSIC.length) {
+            idx = 0; // 안전용 디폴트
+        }
+        double[] alienRaw = ALIEN_PRESS_TIMES_SEC_BY_MUSIC[idx];
+        // 슬로우 보정 X, 그냥 mp3 기준 시간 그대로
+        this.alienPressTimesMs = toMs(alienRaw);
+
+        // ---- 여기까지 ----
+
+        this.guideTimesMs      = buildJudgeTimes(GUIDE_TIMES_SEC);
+
+        this.inputEnableTimeMs = userPressTimesMs[0] - 50;
 
         disableSpaceKeyFromBase();
 
-        // 외계인 손 release 타이밍 계산
-        ALIEN_RELEASE_TIMES = new int[ALIEN_PRESS_TIMES_INT.length];
-        for (int i = 0; i < ALIEN_PRESS_TIMES_INT.length; i++) {
-            ALIEN_RELEASE_TIMES[i] = ALIEN_PRESS_TIMES_INT[i] + ALIEN_RELEASE_DELAY_MS;
+        this.alienReleaseTimes = new int[alienPressTimesMs.length];
+        for (int i = 0; i < alienPressTimesMs.length; i++) {
+            alienReleaseTimes[i] = alienPressTimesMs[i] + ALIEN_RELEASE_DELAY_MS;
         }
+
 
         // 이미지 로드
         alien1 = new ImageIcon(Main.class.getResource("../images/alienStage_image/hologram_alien1.png")).getImage();
@@ -444,11 +593,15 @@ public class SpaceStage2 extends SpaceAnimation {
 
 
 
-        // ✅ Stage2 전용: WASD 눌렀을 때만 정답 판정 + Boom 실행
+        // ✅ Stage2 전용: WASD 눌렀을 때만 판정 + Boom 실행
+        // ✅ Stage2 전용: WASD 눌렀을 때만 판정 + Boom 실행
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 int code = e.getKeyCode();
+
+                // 🔹 사용자가 누른 키 로그
+                System.out.println("[KEY] Pressed: " + KeyEvent.getKeyText(code) + " (code=" + code + "), time=" + currentMusicTimeMs);
 
                 boolean fireLeft = false;
                 boolean fireRight = false;
@@ -470,67 +623,73 @@ public class SpaceStage2 extends SpaceAnimation {
                         fireRight = true;
                         break;
                     default:
-                        return; // WASD 아니면 무시
+                        // WASD 말고 다른 키는 그냥 무시 (판정도 안 함)
+                        return;
                 }
 
                 changeStageImageOnPress();
                 repaint();
-
                 startBoomAnimation(fireLeft, fireRight);
 
-                // ================== 여기부터 "정답 키 기반" 판정 로직 ==================
+                // ===== 여기부터 리듬 판정 =====
 
-                // 1) 아직 입력 허용 시간 전이면: 그냥 MISS 처리
-                if (currentMusicTimeMs < INPUT_ENABLE_TIME_MS) {
-                    registerMissFromStage2(-1);   // 리듬/면발 쪽 MISS 처리 (점수 시스템에 맞게 구현)
-                    return;
-                }
-
-                // 2) 지금 시간 근처에서 "제일 가까운 노트 인덱스" 찾기
-                int noteIdx = getNearestNoteIndexForNow(NOTE_SEARCH_WINDOW_MS);
-                if (noteIdx == -1) {
-                    // 근처에 어떤 노트도 없으면 MISS
+                // 0) 시간 블록되면 바로 MISS
+                if (isTimeInputBlocked()) {
                     registerMissFromStage2(-1);
                     return;
                 }
 
-                // 3) 이 시간대의 "정답 키" 가져오기
-                int expectedKey = NOTE_KEYS[noteIdx];   // 💡 미리 정해둔 정답 키 배열
+                boolean isHit = false;    // 기본값: 실패
+                int targetNoteIndex = -1; // 어느 노트를 기준으로 MISS/HIT 할지
 
-                // 4) 눌린 키(code)가 정답 키가 아니면 → **무조건 오답(MISS)**
-                if (code != expectedKey) {
-                    registerMissFromStage2(noteIdx);    // 이 노트를 담당하는 면발 턴도 실패 처리
+                // 1) 아직 입력 허용 시간 전 → 강제 MISS
+                if (currentMusicTimeMs < inputEnableTimeMs) {
+                    registerMissFromStage2(-1);
                     return;
                 }
 
-                // 5) 여기까지 왔다는 건 "정답 키를 눌렀다"는 뜻 → 시간 차로 최종 판정
-                int noteTime = USER_PRESS_TIMES_INT[noteIdx];
-                int diff = Math.abs(currentMusicTimeMs - noteTime);
+                // 2) 지금 시간 근처 노트 찾기
+                int noteIdx = getNearestNoteIndexForNow(NOTE_SEARCH_WINDOW_MS);
+                targetNoteIndex = noteIdx;
 
-                if (diff <= JUDGE_GOOD_MS) {
-                    // ✅ 정답 키 + 시간도 범위 안 → 성공
+                if (noteIdx >= 0) {
+                    int expectedKey = noteKeys[noteIdx];
+                    int noteTime    = userPressTimesMs[noteIdx];
+                    int diff        = Math.abs(currentMusicTimeMs - noteTime);
 
-                    // 리듬 시스템(Perfect/Good/Miss 텍스트, 점수, 콤보)은 여기서만 호출
-                    SpaceStage2.super.processSpaceKeyPressLogic();
+                    // 🔹 디버그용 로그
+                    System.out.println("Input Key: " + KeyEvent.getKeyText(code)
+                            + " | Expected: " + KeyEvent.getKeyText(expectedKey));
+                    System.out.println("Input Time: " + currentMusicTimeMs);
+                    System.out.println("Closest Correct Time: " + noteTime);
+                    System.out.println("Measured Difference (minDiff): " + diff);
+                    System.out.println("------------------------------------");
 
-                    // 면발 턴 성공 처리 (모든 노트 성공 시 UFO로 끌려가게)
-                    registerHitToNoodleTurn(noteIdx);
-                } else {
-                    // 정답 키를 눌렀지만, 시간 차이가 너무 크면 → MISS
-                    registerMissFromStage2(noteIdx);
+
+                    // ✔︎ "박자에 맞고" + "맞는 키" 인 경우에만 HIT
+                    if (code == expectedKey && diff <= JUDGE_GOOD_MS) {
+                        // ✅ Stage1과 동일한 판정 시스템 사용 (Perfect/Good/Miss 결정)
+                        SpaceStage2.super.processSpaceKeyPressLogic();
+
+                        // ✅ 면발 턴에 성공 1개 기록
+                        registerHitToNoodleTurn(noteIdx);
+                        isHit = true;
+                    }
+                }
+
+                // 3) 위 조건을 통과 못했다면 전부 MISS
+                if (!isHit) {
+                    registerMissFromStage2(targetNoteIndex);
                 }
             }
 
             @Override
             public void keyReleased(KeyEvent e) {
                 int code = e.getKeyCode();
-
-                // ✅ WASD 키가 떼졌을 때 cat2 → cat1 으로 복귀
                 if (code == KeyEvent.VK_W ||
                         code == KeyEvent.VK_A ||
                         code == KeyEvent.VK_S ||
                         code == KeyEvent.VK_D) {
-
                     changeStageImageOnRelease();
                     repaint();
                 }
@@ -538,33 +697,37 @@ public class SpaceStage2 extends SpaceAnimation {
         });
 
 
-
-
     }
 
 
     // ✅ 현재 음악 시간 근처의 노트에 대해, keyCode가 정답인지 확인
     private boolean isCorrectKeyForCurrentTime(int keyCode) {
-        if (currentMusicTimeMs < INPUT_ENABLE_TIME_MS) return false;
+        if (currentMusicTimeMs < inputEnableTimeMs) return false;
 
         final int LARGE_WINDOW_MS = 1500;
 
         int idx = getNearestNoteIndex(currentMusicTimeMs, LARGE_WINDOW_MS);
-        if (idx == -1) {
-            return false;
-        }
+        if (idx == -1) return false;
 
-        int noteTime = USER_PRESS_TIMES_INT[idx];
-        int expectedKey = NOTE_KEYS[idx];
+        int noteTime    = userPressTimesMs[idx];
+        int expectedKey = noteKeys[idx];
+
 
         return keyCode == expectedKey;
     }
 
 
+
+
     // 🔻 Stage2 에서 오답일 때 강제 MISS + 턴 실패
     private void registerMissFromStage2(int noteIndex) {
-        // 1) 점수/콤보 Miss 반영 (SpaceAnimation 또는 RhythmJudgementManager에 맞춰서 작성)
-        // ex) super.registerMissFromChild(); 또는 RhythmJudgementManager.registerMiss(...);
+        // 1) 리듬 MISS 등록 (MISS 텍스트)
+        registerForcedMiss();
+
+        // 1.5) 점수 MISS 반영
+        if (judgementManager != null) {
+            judgementManager.forceMiss(currentMusicTimeMs);
+        }
 
         // 2) 이 노트를 담당하는 면발 턴을 실패로 표시
         if (noteIndex < 0) return;
@@ -584,8 +747,6 @@ public class SpaceStage2 extends SpaceAnimation {
     }
 
 
-
-
     // 블랙홀 애니메이션 리셋 (크기/시간 초기화)
     private void resetBlackhole(int t) {
         blackholeVisible = true;
@@ -602,7 +763,7 @@ public class SpaceStage2 extends SpaceAnimation {
     private static final int NOTE_SEARCH_WINDOW_MS = 500;
 
     // 🔹 이 안에 들어오면 "성공"으로 볼 시간 범위 (원하는 대로 조절)
-    private static final int JUDGE_GOOD_MS = 150;   // ±150ms
+    private static final int JUDGE_GOOD_MS = 230;   // ±230ms
 
 
     // 🔵 수정된 spawnNoodle
@@ -645,30 +806,21 @@ public class SpaceStage2 extends SpaceAnimation {
 
 
 
-    // ✅ 현재 음악 시간 t 기준으로 "고정된 타이밍"에 키 가이드 표시
+    // ✅ 키 가이드
     private void updateKeyGuideByTime(int t) {
-        // 53초 이후에는 가이드 안보이게
         if (phaseChangedAt53) {
             currentKeyGuideImage = null;
             return;
         }
 
-        // 기본값: 안 보이게
         currentKeyGuideImage = null;
 
-        // 원하는 경우: 아예 전체 데모 구간에도 가이드 띄우고 싶으면 이 if 제거해도 됨
-        // if (t < INPUT_ENABLE_TIME_MS) {
-        //     return;
-        // }
-
-        for (int i = 0; i < GUIDE_TIMES_MS.length; i++) {
-            int start = GUIDE_TIMES_MS[i];
+        for (int i = 0; i < guideTimesMs.length; i++) {
+            int start = guideTimesMs[i];
             int end   = start + GUIDE_SHOW_DURATION_MS;
 
-            // t가 이 구간 안에 들어오면 해당 가이드를 보여줌
             if (t >= start && t <= end) {
                 int keyCode = GUIDE_KEYS[i];
-
                 switch (keyCode) {
                     case KeyEvent.VK_A:
                         currentKeyGuideImage = keyAImage;
@@ -679,14 +831,12 @@ public class SpaceStage2 extends SpaceAnimation {
                     case KeyEvent.VK_W:
                         currentKeyGuideImage = keyWImage;
                         break;
-                    default:
-                        currentKeyGuideImage = null;
                 }
-                // 같은 시간에 여러 개 겹치는 일 없다고 보면 바로 return 해도 됨
                 return;
             }
         }
     }
+
 
 
 
@@ -874,13 +1024,13 @@ public class SpaceStage2 extends SpaceAnimation {
         }
 
         // 외계인 손 자동 동작
-        for (int pressTime : ALIEN_PRESS_TIMES_INT) {
+        for (int pressTime : alienPressTimesMs) {   // ✅ ALIEN_PRESS_TIMES_INT → alienPressTimesMs
             if (t >= pressTime && t < pressTime + 50) {
                 if (currentAlien == alien1) currentAlien = alien2;
                 break;
             }
         }
-        for (int releaseTime : ALIEN_RELEASE_TIMES) {
+        for (int releaseTime : alienReleaseTimes) { // ✅ ALIEN_RELEASE_TIMES → alienReleaseTimes
             if (t >= releaseTime && t < releaseTime + 50) {
                 if (currentAlien == alien2) currentAlien = alien1;
                 break;
@@ -1041,8 +1191,8 @@ public class SpaceStage2 extends SpaceAnimation {
             int drawH = (int) (originalH * blackholeScale);
 
             // 기준 위치: 화면 중앙 기준 + 오프셋
-            int baseX = getWidth() / 2 - 370  ;
-            int baseY = getHeight() / 2 - 270 ;
+            int baseX = getWidth() / 2 - 330  ;
+            int baseY = getHeight() / 2 - 310 ;
 
             int x = baseX - drawW / 2 + blackholeOffsetX;
             int y = baseY - drawH / 2 + blackholeOffsetY;
