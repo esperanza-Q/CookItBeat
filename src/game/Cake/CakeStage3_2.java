@@ -3,6 +3,7 @@ package game.Cake;
 import game.Main;
 import game.Music;
 import game.rhythm.RhythmJudgementManager;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -41,9 +42,9 @@ public class CakeStage3_2 extends CakeAnimation {
 
     private static final int[][] GUIDE_FIXED_POSITIONS = {
             // 크림 가이드 6개의 고유 위치 (예시 좌표, 실제 레이아웃에 맞게 수정 필요)
-            {400, 300}, {550, 300}, {700, 300}, {400, 400}, {550, 400}, {700, 400},
+            {350, 350}, {550, 350}, {750, 350}, {350, 550}, {550, 550}, {750, 550},
             // 딸기 가이드 6개의 고유 위치 (예시 좌표)
-            {400, 300}, {550, 300}, {700, 300}, {400, 400}, {550, 400}, {700, 400}
+            {350, 350}, {550, 350}, {750, 350}, {350, 550}, {550, 550}, {750, 550}
     };
 
     private static List<Long> convertToLongArray(int[] array) {
@@ -132,22 +133,21 @@ public class CakeStage3_2 extends CakeAnimation {
                 int clickX = e.getX();
                 int clickY = e.getY();
 
-
                 // 충돌 판정 루프
-                    if (cakeBound.contains(clickX, clickY)) {
-                        //Music.playEffect("laser02.mp3");
-                        processSpaceKeyPressLogic(); // 판정 로직
-                        if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
-                            if(currentMusicTimeMs >= CREAM_GUIDE_END && currentMusicTimeMs < STRAWBERRY_GUIDE_START){
-                                clickImage = decoCream; // (미리 로드된 이미지 객체)//
-                            } else if(currentMusicTimeMs >= STRAWBERRY_GUIDE_END && currentMusicTimeMs <= STRAWBERRY_END_TIME ){
-                                clickImage = decoStrawberry;
-                            }
-
-                            successfulClicks.add(new Point(clickX, clickY));
+                if (cakeBound.contains(clickX, clickY)) {
+                    //Music.playEffect("laser02.mp3");
+                    processSpaceKeyPressLogic(); // 판정 로직
+                    if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
+                        if (currentMusicTimeMs >= CREAM_GUIDE_END && currentMusicTimeMs < STRAWBERRY_GUIDE_START) {
+                            clickImage = decoCream; // (미리 로드된 이미지 객체)//
+                        } else if (currentMusicTimeMs >= STRAWBERRY_GUIDE_END && currentMusicTimeMs <= STRAWBERRY_END_TIME) {
+                            clickImage = decoStrawberry;
                         }
 
+                        successfulClicks.add(new Point(clickX, clickY));
                     }
+
+                }
                 repaint();
             }
         });
@@ -211,22 +211,26 @@ public class CakeStage3_2 extends CakeAnimation {
     protected void drawStageObjects(Graphics2D g2) {
         // 🖼️ 가이드 카드병정 이미지
         if (guideCardImage1 != null && cardImage != null) {
-            for(int i = 0; i < GUIDE_TIMES_INT.length-1 ; i++) {
-                if (i % 2 == 0 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i+1]) cardImage = guideCardImage2;
-                if (i % 2 == 1 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i+1]) cardImage = guideCardImage1;
+            for (int i = 0; i < GUIDE_TIMES_INT.length - 1; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i + 1])
+                    cardImage = guideCardImage2;
+                if (i % 2 == 1 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i + 1])
+                    cardImage = guideCardImage1;
             }
-            for(int i = 0; i < USER_PRESS_TIMES_INT.length-1 ; i++) {
-                if (i % 2 == 0 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i+1]) cardImage = guideCardImage2;
-                if (i % 2 == 1 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i+1]) cardImage = guideCardImage1;
+            for (int i = 0; i < USER_PRESS_TIMES_INT.length - 1; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i + 1])
+                    cardImage = guideCardImage2;
+                if (i % 2 == 1 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i + 1])
+                    cardImage = guideCardImage1;
             }
 
-            if(currentMusicTimeMs >= STRAWBERRY_END_TIME) cardImage = guideCardImage1;
+            if (currentMusicTimeMs >= STRAWBERRY_END_TIME) cardImage = guideCardImage1;
 
-            g2.drawImage(cardImage, 20,-30, getWidth(), getHeight(), null);
+            g2.drawImage(cardImage, 20, -30, getWidth(), getHeight(), null);
             AffineTransform originalTransform = g2.getTransform();
             g2.translate(getWidth(), 0);
             g2.scale(-1.0, 1.0);
-            g2.drawImage(cardImage, 20,-30, getWidth(), getHeight(), null);
+            g2.drawImage(cardImage, 20, -30, getWidth(), getHeight(), null);
             g2.setTransform(originalTransform);
         }
 
@@ -249,8 +253,8 @@ public class CakeStage3_2 extends CakeAnimation {
 
                         // guideLights[0]을 크림 가이드 6개 위치에 그립니다.
                         g2.drawImage(guideLights[0], x, y, GUIDE_LIGHT_WIDTH, GUIDE_LIGHT_HEIGHT, null);
-                        if(currentTime <= flashTime + 200)
-                            g2.drawImage(guideStick, x+GUIDE_LIGHT_WIDTH, y-GUIDE_LIGHT_HEIGHT, 500, 400, null);
+                        if (currentTime <= flashTime + 200)
+                            g2.drawImage(guideStick, x + GUIDE_LIGHT_WIDTH, y - GUIDE_LIGHT_HEIGHT, 500, 400, null);
                     }
 
                 }
@@ -288,8 +292,8 @@ public class CakeStage3_2 extends CakeAnimation {
 
                         // guideLights[0]을 크림 가이드 6개 위치에 그립니다.
                         g2.drawImage(guideLights[0], x, y, GUIDE_LIGHT_WIDTH, GUIDE_LIGHT_HEIGHT, null);
-                        if(currentTime <= flashTime + 200)
-                            g2.drawImage(guideStick, x+GUIDE_LIGHT_WIDTH, y-GUIDE_LIGHT_HEIGHT-200, 250, 200, null);
+                        if (currentTime <= flashTime + 200)
+                            g2.drawImage(guideStick, x + GUIDE_LIGHT_WIDTH, y - GUIDE_LIGHT_HEIGHT - 200, 250, 200, null);
                     }
                 }
             }
@@ -335,11 +339,31 @@ public class CakeStage3_2 extends CakeAnimation {
             int TOOL_SIZE_y = 0;
             int drawX = 0;
             int drawY = 0;
-            if(imageToFollow == currentPipingImage){
+
+            if (clickImage != null) {
+                for (Point p : successfulClicks) {
+
+                    int x = p.x;
+                    int y = p.y;
+                    int width, height;
+                    if (clickImage == decoCream) {
+                        width = 195; //150 * 1.3
+                        height = 293;
+                    } else {
+                        width = 299; //230 * 1.3
+                        height = 273; //210
+                    }
+                    // 이미지를 중앙에 정렬하여 그리기 (이미지 크기가 30x30이라고 가정)
+                    // 클릭 지점(x, y)을 이미지의 중심에 오도록 조정합니다.
+                    g2.drawImage(clickImage, x - width / 2, y - height / 2, width, height, null);
+                }
+            }
+
+            if (imageToFollow == currentPipingImage) {
                 TOOL_SIZE_x = 225;
                 TOOL_SIZE_y = 275;
                 drawX = mouseX - TOOL_SIZE_x + 30;
-                drawY = mouseY - TOOL_SIZE_y + 30 ;
+                drawY = mouseY - TOOL_SIZE_y + 30;
             } else {
                 TOOL_SIZE_x = 230;
                 TOOL_SIZE_y = 210;
@@ -349,26 +373,7 @@ public class CakeStage3_2 extends CakeAnimation {
 
             g2.drawImage(imageToFollow, drawX, drawY, TOOL_SIZE_x, TOOL_SIZE_y, null);
 
-            if (clickImage != null) {
-                for (Point p : successfulClicks) {
-
-                    int x = p.x;
-                    int y = p.y;
-                    int width, height;
-                    if(clickImage == decoCream){
-                        width = 195; //150 * 1.3
-                        height = 293;
-                    } else {
-                        width = 399; //230 * 1.3
-                        height = 273; //210
-                    }
-                    // 이미지를 중앙에 정렬하여 그리기 (이미지 크기가 30x30이라고 가정)
-                    // 클릭 지점(x, y)을 이미지의 중심에 오도록 조정합니다.
-                    g2.drawImage(clickImage, x - width/2, y - height/2, width, height, null);
-                }
-            }
         }
-
 
 
     }
@@ -393,6 +398,7 @@ public class CakeStage3_2 extends CakeAnimation {
 
         /**
          * 주어진 좌표가 타원의 경계 내부에 있는지 확인합니다.
+         *
          * @param clickX 클릭된 X 좌표
          * @param clickY 클릭된 Y 좌표
          * @return 타원 내부에 있으면 true, 아니면 false
