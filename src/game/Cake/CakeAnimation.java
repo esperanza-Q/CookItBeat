@@ -31,8 +31,17 @@ public abstract class CakeAnimation extends JPanel {
     protected Image creamPiping1;
     protected Image creamPiping2; // 플레이어 도구 짤주머니
 
+    protected Image creamCat;   // 크림 짜는 고양이
+    protected Image[] cakeCream; // 옆면 크림
+
     protected int currentMusicTimeMs = 0; // 현재 음악 재생 시간
     protected Image strawberryTopImage;
+
+    protected Image guideA;
+    protected Image guideS;
+    protected Image guideD;
+    protected Image guideF;
+    protected Image[] guideKeyImage;
 
     // ‼️ [추가] 판정 이미지 관련 필드
     protected Image[] judgementImages = new Image[3];
@@ -200,6 +209,12 @@ public abstract class CakeAnimation extends JPanel {
                 // ‼️ 이미지 투명도 조절 (점점 사라지는 애니메이션)
                 float alpha = 1.0f - (float)(currentTime - judgementDisplayStartTime) / JUDGEMENT_DISPLAY_DURATION;
                 alpha = Math.max(0.0f, alpha);
+
+                if (alpha > 1.0f) {
+                    alpha = 1.0f;
+                } else if (alpha < 0.0f) {
+                    alpha = 0.0f;
+                }
 
                 g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
                 g2.drawImage(judgementImage, imgX, imgY, imgW, imgH, null);

@@ -17,10 +17,6 @@ public class CakeStage3_2 extends CakeAnimation {
     private CakePanel controller;
     protected RhythmJudgementManager judgementManager;
     private static final int JUDGEMENT_OFFSET_MS = -180;
-    private Image currentJudgementImage = null;
-    protected String currentJudgementText = null;
-    private Timer judgementTimer;
-    private final int JUDGEMENT_DISPLAY_TIME_MS = 1000; // 판정 결과 표시 시간 (1초)
 
     private Image clickImage;
     private Image cardImage = guideCardImage1;
@@ -39,7 +35,7 @@ public class CakeStage3_2 extends CakeAnimation {
             106414, 106618, 106844, 107275, 107502, 107695 // 딸기
     };
 
-    // ‼️ 6개의 판정 타이밍 가이드 이미지 각각의 고유 위치 정의
+    // ‼️ 6개의 판정 타이밍 가이드 이미지 크기 정의
     private static final int GUIDE_LIGHT_WIDTH = 200;
     private static final int GUIDE_LIGHT_HEIGHT = 200;
 
@@ -206,6 +202,8 @@ public class CakeStage3_2 extends CakeAnimation {
         guideStick = loadImage("../images/cakeStage_image/stage3/Guide_stage3.png");
         creamPiping1 = loadImage("../images/cakeStage_image/stage3/Cat01_stage3-1.png");
         creamPiping2 = loadImage("../images/cakeStage_image/stage3/Cat02_stage3-1.png");
+
+
     }
 
 
@@ -358,11 +356,11 @@ public class CakeStage3_2 extends CakeAnimation {
                     int y = p.y;
                     int width, height;
                     if(clickImage == decoCream){
-                        width = 225; //150 + 75
-                        height = 225;
+                        width = 195; //150 * 1.3
+                        height = 293;
                     } else {
-                        width = 345; //230
-                        height = 315; //210
+                        width = 399; //230 * 1.3
+                        height = 273; //210
                     }
                     // 이미지를 중앙에 정렬하여 그리기 (이미지 크기가 30x30이라고 가정)
                     // 클릭 지점(x, y)을 이미지의 중심에 오도록 조정합니다.
