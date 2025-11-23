@@ -42,9 +42,9 @@ public class CakeStage3_2 extends CakeAnimation {
 
     private static final int[][] GUIDE_FIXED_POSITIONS = {
             // 크림 가이드 6개의 고유 위치 (예시 좌표, 실제 레이아웃에 맞게 수정 필요)
-            {350, 350}, {550, 350}, {750, 350}, {350, 550}, {550, 550}, {750, 550},
+            {350, 250}, {550, 250}, {750, 250}, {350, 450}, {550, 450}, {750, 450},
             // 딸기 가이드 6개의 고유 위치 (예시 좌표)
-            {350, 350}, {550, 350}, {750, 350}, {350, 550}, {550, 550}, {750, 550}
+            {350, 250}, {550, 250}, {750, 250}, {350, 450}, {550, 450}, {750, 450}
     };
 
     private static List<Long> convertToLongArray(int[] array) {
@@ -347,10 +347,10 @@ public class CakeStage3_2 extends CakeAnimation {
                     int y = p.y;
                     int width, height;
                     if (clickImage == decoCream) {
-                        width = 195; //150 * 1.3
+                        width = 210; //150 * 1.3
                         height = 293;
                     } else {
-                        width = 299; //230 * 1.3
+                        width = 320; //230 * 1.3
                         height = 273; //210
                     }
                     // 이미지를 중앙에 정렬하여 그리기 (이미지 크기가 30x30이라고 가정)
