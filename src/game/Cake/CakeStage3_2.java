@@ -8,6 +8,7 @@ import java.awt.*;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,12 +17,9 @@ public class CakeStage3_2 extends CakeAnimation {
     private CakePanel controller;
     protected RhythmJudgementManager judgementManager;
     private static final int JUDGEMENT_OFFSET_MS = -180;
-    private Image currentJudgementImage = null;
-    protected String currentJudgementText = null;
-    private Timer judgementTimer;
-    private final int JUDGEMENT_DISPLAY_TIME_MS = 1000; // 판정 결과 표시 시간 (1초)
 
     private Image clickImage;
+    private Image cardImage = guideCardImage1;
 
     // 성공적으로 클릭된 모든 좌표를 저장할 리스트
     private List<Point> successfulClicks = new ArrayList<>();
@@ -37,7 +35,7 @@ public class CakeStage3_2 extends CakeAnimation {
             106414, 106618, 106844, 107275, 107502, 107695 // 딸기
     };
 
-    // ‼️ 6개의 판정 타이밍 가이드 이미지 각각의 고유 위치 정의
+    // ‼️ 6개의 판정 타이밍 가이드 이미지 크기 정의
     private static final int GUIDE_LIGHT_WIDTH = 200;
     private static final int GUIDE_LIGHT_HEIGHT = 200;
 
@@ -88,7 +86,9 @@ public class CakeStage3_2 extends CakeAnimation {
         this.controller = controller;
 
         judgementManager = new RhythmJudgementManager(convertToLongArray(USER_PRESS_TIMES_INT), initialScoreOffset);
-
+       /* judgementManager.setPerfectTiming(100);
+        judgementManager.setGreatTiming(150);
+        judgementManager.setGoodTiming(200);*/
         // ‼️ 마우스 리스너 초기화 호출
         initializeMouseTracking();
     }
@@ -187,8 +187,8 @@ public class CakeStage3_2 extends CakeAnimation {
     @Override
     protected void loadStageSpecificResources() {
         // 가이드 카드병정 이미지 로드
-        guideCardImage1 = loadImage("../images/cakeStage_image/stage1/Card01_stage1-1.png");
-
+        guideCardImage1 = loadImage("../images/cakeStage_image/stage1/Card01_stage1-2.png");
+        guideCardImage2 = loadImage("../images/cakeStage_image/stage1/Card02_stage1-2.png");
         // 재료 이미지 로드 (필요없지만 필드가 CakeAnimation에 남아있으므로 로딩만 유지)
         strawberryBodyImage = loadImage("../images/cakeStage_image/stage1/Strawberry_stage1-1.png");
         shadowImage = loadImage("../images/cakeStage_image/stage1/StrawberryShadow_stage1-1.png");
@@ -202,14 +202,32 @@ public class CakeStage3_2 extends CakeAnimation {
         guideStick = loadImage("../images/cakeStage_image/stage3/Guide_stage3.png");
         creamPiping1 = loadImage("../images/cakeStage_image/stage3/Cat01_stage3-1.png");
         creamPiping2 = loadImage("../images/cakeStage_image/stage3/Cat02_stage3-1.png");
+
+
     }
 
 
     @Override
     protected void drawStageObjects(Graphics2D g2) {
         // 🖼️ 가이드 카드병정 이미지
-        if (guideCardImage1 != null) {
-            g2.drawImage(guideCardImage1, 0,0, getWidth(), getHeight(), null);
+        if (guideCardImage1 != null && cardImage != null) {
+            for(int i = 0; i < GUIDE_TIMES_INT.length-1 ; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i+1]) cardImage = guideCardImage2;
+                if (i % 2 == 1 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i+1]) cardImage = guideCardImage1;
+            }
+            for(int i = 0; i < USER_PRESS_TIMES_INT.length-1 ; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i+1]) cardImage = guideCardImage2;
+                if (i % 2 == 1 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i+1]) cardImage = guideCardImage1;
+            }
+
+            if(currentMusicTimeMs >= STRAWBERRY_END_TIME) cardImage = guideCardImage1;
+
+            g2.drawImage(cardImage, 20,-30, getWidth(), getHeight(), null);
+            AffineTransform originalTransform = g2.getTransform();
+            g2.translate(getWidth(), 0);
+            g2.scale(-1.0, 1.0);
+            g2.drawImage(cardImage, 20,-30, getWidth(), getHeight(), null);
+            g2.setTransform(originalTransform);
         }
 
         long currentTime = currentMusicTimeMs;
@@ -331,27 +349,6 @@ public class CakeStage3_2 extends CakeAnimation {
 
             g2.drawImage(imageToFollow, drawX, drawY, TOOL_SIZE_x, TOOL_SIZE_y, null);
 
-            /*
-            // 1. 색상 설정 (파란색)
-            g2.setColor(Color.BLUE);
-
-            // 2. 타원을 그릴 영역(바운딩 박스) 정의
-            // drawOval(x, y, width, height)
-            // (x, y) = 타원을 감싸는 사각형의 좌측 상단 좌표
-            int x = 215;
-            int y = 110;
-            int width = 840;  // 가로 길이 (장축 또는 단축)
-            int height = 800; // 세로 길이 (장축 또는 단축)
-
-            g2.setColor(Color.BLACK);
-            g2.drawOval(x, y, width, height);
-
-            g2.setColor(Color.BLUE);
-
-            // 두 좌표 (x1, y1)와 (x2, y2)를 잇는 선을 그립니다.
-            g2.drawLine(635, 110, 635, 800);
-            g2.drawLine(215, 455, 1055, 455);*/
-
             if (clickImage != null) {
                 for (Point p : successfulClicks) {
 
@@ -359,11 +356,11 @@ public class CakeStage3_2 extends CakeAnimation {
                     int y = p.y;
                     int width, height;
                     if(clickImage == decoCream){
-                        width = 300;
-                        height = 300;
+                        width = 195; //150 * 1.3
+                        height = 293;
                     } else {
-                        width = 460;
-                        height = 410;
+                        width = 399; //230 * 1.3
+                        height = 273; //210
                     }
                     // 이미지를 중앙에 정렬하여 그리기 (이미지 크기가 30x30이라고 가정)
                     // 클릭 지점(x, y)을 이미지의 중심에 오도록 조정합니다.
