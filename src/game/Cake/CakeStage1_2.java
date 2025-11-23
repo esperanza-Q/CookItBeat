@@ -16,6 +16,8 @@ public class CakeStage1_2 extends CakeAnimation {
     private boolean isCatHandActive = false;
     private RhythmJudgementManager judgementManager;
 
+    private Image info_space = loadImage("../images/cakeStage_image/cakeInfo_space.png");
+
     // 🍳 [추가] 계란 애니메이션 상태 필드
     private boolean isEggDropped = false;
     private long eggDropStartTime = 0;
@@ -46,6 +48,8 @@ public class CakeStage1_2 extends CakeAnimation {
 
     // ⚔️ [유지] 싱크 맞춤 오프셋
     private static final int SYNC_OFFSET_MS = -50;
+
+//    private static final int JUDGEMENT_OFFSET_MS = -190;
 
     public CakeStage1_2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
@@ -90,6 +94,13 @@ public class CakeStage1_2 extends CakeAnimation {
     protected void drawStageObjects(Graphics2D g2) {
 
         long adjustedMusicTimeMs = currentMusicTimeMs + SYNC_OFFSET_MS;
+
+        int desiredHeight = 80;
+        int originalWidth = info_space.getWidth(null);
+        int originalHeight = info_space.getHeight(null);
+        int newWidth = (int) ((double) originalWidth * desiredHeight / originalHeight);
+
+        g2.drawImage(info_space, 1100, 150, newWidth, desiredHeight, null);
 
         final long ADDITIONAL_OFFSET_MS = 100;
 
@@ -179,7 +190,7 @@ public class CakeStage1_2 extends CakeAnimation {
 
             isCatHandActive = true;
 
-            long clickTime = currentMusicTimeMs + JUDGEMENT_OFFSET_MS;
+            long clickTime = currentMusicTimeMs;
 
             // 1. 판정 실행 및 판정 성공 인덱스 획득
             int judgedIndex = judgementManager.handleInput((int)clickTime);
