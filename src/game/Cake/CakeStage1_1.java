@@ -17,6 +17,8 @@ public class CakeStage1_1 extends CakeAnimation {
     private CakePanel controller;
     private RhythmJudgementManager judgementManager;
 
+    private Image info_click = loadImage("../images/cakeStage_image/cakeInfo_click.png");
+
     // ✂️ [유지] 가위 상태 및 위치
     private boolean isScissorsActive = false;
     private static final int SCISSORS_SIZE = 250;
@@ -240,6 +242,13 @@ public class CakeStage1_1 extends CakeAnimation {
     protected void drawStageObjects(Graphics2D g2) {
 
         long adjustedMusicTimeMs = currentMusicTimeMs + SYNC_OFFSET_MS;
+
+        int desiredHeight = 80;
+        int originalWidth = info_click.getWidth(null);
+        int originalHeight = info_click.getHeight(null);
+        int newWidth = (int) ((double) originalWidth * desiredHeight / originalHeight);
+
+        g2.drawImage(info_click, 1110, 180, newWidth, desiredHeight, null);
 
         // 1. ⚔️ 카드 이미지 전환 로직 (유지)
         boolean isPulseActive = false;
