@@ -1255,7 +1255,7 @@ public class SpaceStage2 extends SpaceAnimation {
 
         // 외계인 손
         if (currentAlien != null) {
-            g.drawImage(currentAlien, 0, 0, getWidth(), getHeight(), null);
+            g.drawImage(currentAlien, 0, -10, getWidth(), getHeight(), null);
         }
     }
 

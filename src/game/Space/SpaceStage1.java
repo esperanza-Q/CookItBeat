@@ -24,6 +24,8 @@ public class SpaceStage1 extends SpaceAnimation {
     // ✅ [추가] 외계인 손 현재 이미지
     private Image currentAlien;
 
+    private Image info_space = new ImageIcon(Main.class.getResource("../images/mainUI/info_space.png")).getImage();
+
     // ✅ [추가] 물총 애니메이션 관련 변수
     private Image currentWaterImage = null;
     private Timer waterAnimationTimer;
@@ -111,7 +113,7 @@ public class SpaceStage1 extends SpaceAnimation {
         // ‼️ currentUser는 cat1으로 고정 (사용자가 SpaceBar 누를 때만 cat2로 변경)
         currentUser = cat1;
         // ‼️ 외계인 손은 초기엔 alien1 또는 null로 설정 (화면에 표시 여부는 processStageEvents에서 제어)
-        currentAlien = null; // 초기에는 보이지 않도록 null로 설정
+        currentAlien = alien1; // 초기에는 보이지 않도록 null로 설정
 
         // ✅ [추가] 물총 애니메이션 타이머 설정
         setupWaterAnimationTimer();
@@ -177,10 +179,18 @@ public class SpaceStage1 extends SpaceAnimation {
         // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
         g.drawImage(currentUser, 0, 0, null);
 
+
+        int desiredHeight = 50;
+        int originalWidth = info_space.getWidth(null);
+        int originalHeight = info_space.getHeight(null);
+        int newWidth = (int) ((double) originalWidth * desiredHeight / originalHeight);
+
         // ✅ 외계인 손을 왼쪽 y축 중간에 작게 그립니다.
         if (currentAlien != null) {
-            g.drawImage(currentAlien, 0, 0, getWidth(), getHeight(), null);
+            g.drawImage(currentAlien, 0, -10, getWidth(), getHeight(), null);
         }
+
+        g.drawImage(info_space, 320, 425, newWidth, desiredHeight, null);
 
         // ✅ [추가] 물총 그리기 (Stage1에만 적용)
         if (currentWaterImage != null) {
@@ -213,7 +223,7 @@ public class SpaceStage1 extends SpaceAnimation {
         // ‼️ 이벤트 타이밍에 따라 currentAlien (외계인 손)의 보이기/숨기기 및 이미지를 제어합니다.
 
         // 1. 초기화 (초기 상태)
-        if (t < ALIEN_APPEAR_TIME_1 && currentAlien != null) { currentAlien = null; }
+        if (t < ALIEN_APPEAR_TIME_1 && currentAlien != null) { currentAlien = alien1; }
 
         // 2. 외계인 손 등장 및 이미지 변경 로직
         // 외계인 손이 등장하는 시점에 alien1로 설정
