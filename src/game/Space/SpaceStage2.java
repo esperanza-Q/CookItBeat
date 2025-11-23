@@ -724,6 +724,11 @@ public class SpaceStage2 extends SpaceAnimation {
         // 1) 리듬 MISS 등록 (MISS 텍스트)
         registerForcedMiss();
 
+        // 1.5) 점수 MISS 반영
+        if (judgementManager != null) {
+            judgementManager.forceMiss(currentMusicTimeMs);
+        }
+
         // 2) 이 노트를 담당하는 면발 턴을 실패로 표시
         if (noteIndex < 0) return;
 

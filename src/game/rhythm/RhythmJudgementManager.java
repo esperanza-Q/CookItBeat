@@ -1,5 +1,7 @@
 package game.rhythm;
 
+import game.Space.StageManager;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +21,12 @@ public class RhythmJudgementManager {
     private int score = 0;
     private String lastJudgement = "NONE";
     private long lastJudgementTime;
+
+    private int perfectCount = 0;
+    private int goodCount = 0;   // GREAT + GOOD를 합쳐서 Good로 취급
+    private int missCount = 0;
+
+
 
     // ✅ 정답 및 입력 기록
     // ‼️ matchedTimings: 이미 판정된 정답 타이밍의 인덱스를 저장 (NullPointerException 방지)
@@ -94,21 +102,34 @@ public class RhythmJudgementManager {
             if (minDiff <= PERFECT_TIMING) {
                 lastJudgement = "PERFECT!";
                 score += 100;
+                perfectCount++;
+
+                StageManager.addPerfect();   // ✅ 추가
+
             } else if (minDiff <= GREAT_TIMING) {
                 lastJudgement = "GREAT!";
                 score += 70;
-            } else { // minDiff <= GOOD_TIMING
+                goodCount++;
+
+                StageManager.addGood();      // ✅ 추가
+
+            } else {
                 lastJudgement = "GOOD";
                 score += 50;
+                goodCount++;
+
+                StageManager.addGood();      // ✅ 추가
             }
+
             return closestIndex; // ‼️ 판정 성공 시 인덱스 반환
         } else {
-            // 가장 가까운 정답이 판정 범위 밖에 있었을 경우 (MISS)
-            // (이 로직은 입력이 들어올 때마다 호출되므로, 정확한 MISS 처리는 별도 로직이 필요할 수 있으나, 현재 코드 구조 유지)
             lastJudgement = "MISS";
             lastJudgementTime = currentInputTime;
+            missCount++;
+            score -= 10;
 
-            return -1; // ‼️ 판정 실패 시 -1 반환
+            StageManager.addMiss();      // ✅ 추가
+            return -1;
         }
     }
 
@@ -117,6 +138,16 @@ public class RhythmJudgementManager {
         this.score = score;
     }
 
+    public void forceMiss(int t){
+        lastJudgement = "MISS";
+        lastJudgementTime = t;
+        missCount++;
+        score -= 10;
+
+        StageManager.addMiss();  // ✅ 이거 반드시 추가
+    }
+
+
     // ✅ Getter 메서드 (SpaceAnimation에서 화면 표시 및 상태 확인을 위해 사용)
     public int getScore() { return score; }
     public String getLastJudgement() { return lastJudgement; }
@@ -124,4 +155,8 @@ public class RhythmJudgementManager {
     public int getMatchedCount() { return matchedTimings.size(); }
     public int getTotalCount() { return correctTimings.size(); }
     public List<Long> getCorrectTimings() { return correctTimings; }
+    public int getPerfectCount() { return perfectCount; }
+    public int getGoodCount() { return goodCount; }
+    public int getMissCount() { return missCount; }
+
 }

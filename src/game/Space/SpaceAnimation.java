@@ -39,6 +39,7 @@ public class SpaceAnimation extends JPanel {
     // ✅ [추가] 레이저 이미지 배열
     protected Image[] laserFrames;
 
+    private boolean isEndTriggered = false; // ✅ 엔딩 한번만 실행
 
     // 공기포 관련 이미지 배열
     protected Image[] BoomFrames;
@@ -135,7 +136,7 @@ public class SpaceAnimation extends JPanel {
         // ✅ 우주선은 진행바 왼쪽에서 시작 (왼→오 이동)
         this.spaceshipX = 0;
 
-        background = new ImageIcon(Main.class.getResource("../images/alienStage_image/Background(deco_x).png")).getImage();
+        background = new ImageIcon(Main.class.getResource("../images/alienStage_image/Background_deco_x.png")).getImage();
         planets1 = new ImageIcon(Main.class.getResource("../images/alienStage_image/Background_deco2.png")).getImage();
 
         controller = new ImageIcon(Main.class.getResource("../images/alienStage_image/controller.png")).getImage();
@@ -155,7 +156,11 @@ public class SpaceAnimation extends JPanel {
         rightFrames = new Image[]{R_control01, R_control02, R_control03, R_control04};
         R_currentControlImage = R_control01;
 
-        ufo = new ImageIcon(Main.class.getResource("../images/alienStage_image/ufo.png")).getImage();
+        // ✅ StageManager가 들고 있는 UFO 스킨으로 로드
+        ufo = new ImageIcon(Main.class.getResource(
+                StageManager.getUfoImagePath()
+        )).getImage();
+
 
         // ✅ 진행 바 & 우주선 아이콘 로드
         progressBarBackground = new ImageIcon(Main.class.getResource("../images/mainUI/alienStage_progBar.png")).getImage();
@@ -250,6 +255,27 @@ public class SpaceAnimation extends JPanel {
     public SpaceAnimation() {
         this(new long[]{});
     }
+
+    public void onMusicEnded() {
+        if (isEndTriggered) return;
+        isEndTriggered = true;
+        SwingUtilities.invokeLater(this::requestResultChange);
+    }
+
+    public void reloadUfoFromManager() {
+        String path = StageManager.getUfoImagePath();
+        var url = Main.class.getResource(path);
+
+        if (url == null) {
+            System.err.println("[UFO] resource not found: " + path);
+            return;
+        }
+
+        this.ufo = new ImageIcon(url).getImage();
+        System.out.println("[UFO] reloaded: " + path);
+        repaint();
+    }
+
 
 
     // ✅ 새 메서드: StageManager의 totalScore를 이 스테이지에 반영
@@ -514,11 +540,15 @@ public class SpaceAnimation extends JPanel {
             
             if (!isTransitionTriggered && t >= NEXT_STAGE_2_TIME_MS && t < NEXT_STAGE_3_TIME_MS) {
                 isTransitionTriggered = true;
+                // ✅ Stage2 들어가기 전에 UFO를 물총 버전으로
+                StageManager.setUfoImagePath("../images/alienStage_image/ufo_water.png");
                 SwingUtilities.invokeLater(this::requestStage2Change);
             }
             
             if (isTransitionTriggered && t >= NEXT_STAGE_3_TIME_MS) {
                 isTransitionTriggered = false;
+                // ✅ Stage3 들어가기 전에 UFO를 면발 버전으로
+                StageManager.setUfoImagePath("../images/alienStage_image/ufo_noodle.png");
                 SwingUtilities.invokeLater(this::requestStage3Change);
             }
         }
@@ -528,6 +558,14 @@ public class SpaceAnimation extends JPanel {
             int totalGameScore = judgementManager.getScore();
             StageManager.setTotalScore(totalGameScore);
             this.currentScore = totalGameScore;
+
+
+        }
+
+        // ✅ [추가] 음악 끝나면 결과 화면 전환
+        if (!isEndTriggered && totalLength > 0 && t >= totalLength) {
+            isEndTriggered = true;
+            SwingUtilities.invokeLater(this::requestResultChange);
         }
 
         repaint();
@@ -546,6 +584,16 @@ public class SpaceAnimation extends JPanel {
         Container parent = this.getParent();
         if (parent instanceof SpacePanel) ((SpacePanel) parent).switchToStage3Panel();
         else System.err.println("Error: SpaceAnimation's parent is not SpacePanel.");
+    }
+
+    // ✅ 결과 화면으로 전환 요청
+    private void requestResultChange() {
+        Container parent = this.getParent();
+        if (parent instanceof SpacePanel) {
+            ((SpacePanel) parent).switchToResultPanel();
+        } else {
+            System.err.println("Error: SpaceAnimation's parent is not SpacePanel.");
+        }
     }
 
 
