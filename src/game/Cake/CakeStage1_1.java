@@ -61,7 +61,7 @@ public class CakeStage1_1 extends CakeAnimation {
     private static final int SYNC_OFFSET_MS = -50;
 
     // ⚔️ [핵심 수정] 유저 입력 판정 전용 오프셋 (30ms로 설정)
-    private static final int JUDGEMENT_OFFSET_MS = 0;
+//    private static final int JUDGEMENT_OFFSET_MS = -190;
 
     // ⚔️ [제거] 낙하 관련 상수 모두 제거
     // private static final int STRAWBERRY_FALL_DURATION_MS = 20;
@@ -82,7 +82,7 @@ public class CakeStage1_1 extends CakeAnimation {
             new Point(1000, 390), // 왼쪽
             new Point(475, 390), // 첫 줄과 둘째 줄 사이 중앙 (총 7개)
 
-// ⬇️ 두 번째 줄 (총 4개, Y=460~530)
+            // ⬇️ 두 번째 줄 (총 4개, Y=460~530)
             new Point(400, 460), // 중앙 왼쪽
             new Point(600, 460), // 중앙 오른쪽
             new Point(800, 500) // 오른쪽 (총 4개)
