@@ -272,7 +272,7 @@ public class SpaceAnimation extends JPanel {
         }
 
         this.ufo = new ImageIcon(url).getImage();
-        System.out.println("[UFO] reloaded: " + path);
+        //System.out.println("[UFO] reloaded: " + path);
         repaint();
     }
 
@@ -311,12 +311,12 @@ public class SpaceAnimation extends JPanel {
             // ‼️ 오프셋 적용된 음악 시간 계산: 입력 시간을 47ms 앞으로 당겨서 보정
             int adjustedMusicTime = currentMusicTimeMs + GLOBAL_JUDGEMENT_OFFSET_MS;
 
-            // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
-            System.out.println("--------------------------------------------------");
-            System.out.println("[INPUT] Space Bar Pressed!");
-            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
-            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
-            System.out.println("--------------------------------------------------");
+//            // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
+//            System.out.println("--------------------------------------------------");
+//            System.out.println("[INPUT] Space Bar Pressed!");
+//            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
+//            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
+//            System.out.println("--------------------------------------------------");
 
             // ‼️ 조정된 시간을 판정 함수에 전달
             judgementManager.handleInput(adjustedMusicTime);

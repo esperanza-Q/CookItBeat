@@ -22,6 +22,7 @@ public class CakeStageManager {
             52000L,  // Stage 1-2 종료 시간 (9.5초)
             79000L, // Stage 2 종료 시간 (15.5초)
             // 오븐 구간 종료 시간 87000
+            87000L,
             96000L, // Stage 3-1 종료 시간 (20.8초)
             116000L  // Stage 3-2 종료 시간 (26.0초, 최종 종료)
     );
@@ -33,9 +34,10 @@ public class CakeStageManager {
         // ... (CakeStageData 초기화 로직 유지) ...
         stageDataList.add(new CakeStageData(1, "재료 손질 (꼭지)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage1/Background_stage1-1.png", dummyTimings));
         stageDataList.add(new CakeStageData(2, "재료 손질 (넣기)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage1/Background_stage1-2.png", dummyTimings));
-        stageDataList.add(new CakeStageData(3, "반죽 만들기", GAME_MUSIC_FILE, "../images/cakeStage_image/stage2/dough_background.png", dummyTimings));
-        stageDataList.add(new CakeStageData(4, "몽환 케이크 데코 (휘핑)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage3/Background2_stage3-1.png", dummyTimings));
-        stageDataList.add(new CakeStageData(5, "몽환 케이크 데코 (딸기)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage3/Background_stage3-2.png", dummyTimings));
+        stageDataList.add(new CakeStageData(3, "반죽 만들기", GAME_MUSIC_FILE, "../images/cakeStage_image/stage2/dough_background_bowlO.png", dummyTimings));
+        stageDataList.add(new CakeStageData(4, "오븐", GAME_MUSIC_FILE, "../images/cakeStage_image/oven/oven_background.png", dummyTimings));
+        stageDataList.add(new CakeStageData(5, "몽환 케이크 데코 (휘핑)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage3/Background_stage3-1.png", dummyTimings));
+        stageDataList.add(new CakeStageData(6, "몽환 케이크 데코 (딸기)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage3/Background_stage3-2.png", dummyTimings));
     }
 
     public static void startFirstStage() {
