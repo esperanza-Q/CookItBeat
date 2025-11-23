@@ -657,13 +657,13 @@ public class SpaceStage2 extends SpaceAnimation {
                     int noteTime    = userPressTimesMs[noteIdx];
                     int diff        = Math.abs(currentMusicTimeMs - noteTime);
 
-                    // 🔹 디버그용 로그
-                    System.out.println("Input Key: " + KeyEvent.getKeyText(code)
-                            + " | Expected: " + KeyEvent.getKeyText(expectedKey));
-                    System.out.println("Input Time: " + currentMusicTimeMs);
-                    System.out.println("Closest Correct Time: " + noteTime);
-                    System.out.println("Measured Difference (minDiff): " + diff);
-                    System.out.println("------------------------------------");
+//                    // 🔹 디버그용 로그
+//                    System.out.println("Input Key: " + KeyEvent.getKeyText(code)
+//                            + " | Expected: " + KeyEvent.getKeyText(expectedKey));
+//                    System.out.println("Input Time: " + currentMusicTimeMs);
+//                    System.out.println("Closest Correct Time: " + noteTime);
+//                    System.out.println("Measured Difference (minDiff): " + diff);
+//                    System.out.println("------------------------------------");
 
 
                     // ✔︎ "박자에 맞고" + "맞는 키" 인 경우에만 HIT
