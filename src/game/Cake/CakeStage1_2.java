@@ -5,8 +5,6 @@ import game.rhythm.RhythmJudgementManager;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,20 +16,30 @@ public class CakeStage1_2 extends CakeAnimation {
     private boolean isCatHandActive = false;
     private RhythmJudgementManager judgementManager;
 
+    // 🍳 [추가] 계란 애니메이션 상태 필드
+    private boolean isEggDropped = false;
+    private long eggDropStartTime = 0;
+    private static final int EGG_DROP_DURATION = 200; // 계란이 떨어지는 애니메이션 시간 (0.5초)
+    private static final int EGG_DROP_DISTANCE = 450; // 계란이 Y축으로 떨어지는 최대 거리 (픽셀)
 
     // ⚔️ [타이밍] 그림자 생성 (가이드) 타이밍
     private static final java.util.List<Long> GUIDE_TIMES_MS = Arrays.asList(
-            41308L, 41519L, 41736L, 42159L, 42386L, 42600L, // 41초 따따따 따따따
-            44731L, 45173L, 45607L, 46025L, // 44초 따아~ 따 따아~ 따
-            48372L, 48581L, 49250L, 49450L // 48초 (따묵음)따따 (따묵음)따따
+            41308L, 41519L, 41736L, 42159L, 42386L, 42600L,
+            44731L, 45173L, 45607L, 46025L,
+            48372L, 48581L, 49250L, 49450L
     );
 
-    // ⚔️ [타이밍] 딸기 생성 (유저 정답) 타이밍
+    // ⚔️ [타이밍] 유저 정답 타이밍 (계란 떨어지는 타이밍)
     private static final List<Long> CORRECT_TIMES_MS = Arrays.asList(
-            43026L, 43250L, 43441L, 43880L, 44100L, 44305L, // 43초 따따따 따따따
-            46498L, 46885L, 47307L, 47732L, // 46초 따아~ 따 따아~ 따
-            50122L, 50403L, 50965L, 51174L  // 50초 (따묵음)따따 (따묵음)따따
+            43026L, 43250L, 43441L, 43880L, 44100L, 44305L,
+            46498L, 46885L, 47307L, 47732L,
+            50122L, 50403L, 50965L, 51174L
     );
+
+    private Image box;
+    private Image bowl;
+    private Image egg;
+    private Image dropEgg;
 
     // ⚔️ [유지] 카드 이미지 전환 지속 시간 (깜빡임용)
     private static final int CARD_TRANSITION_DURATION_MS = 50;
@@ -43,30 +51,27 @@ public class CakeStage1_2 extends CakeAnimation {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
 
-        // 💡 오프셋 값 정의 (재정의)
         final long OFFSET_MS = 100;
 
-        // ‼️ [핵심 수정] judgementManager를 오프셋이 적용된 리스트로 한 번만 초기화합니다.
         this.judgementManager = new RhythmJudgementManager(
-                // 1. 오프셋 적용된 리스트 생성
                 CORRECT_TIMES_MS.stream()
                         .map(startTime -> startTime + OFFSET_MS)
                         .collect(Collectors.toList()),
-                // 2. 초기 점수 오프셋을 두 번째 인수로 전달
                 initialScoreOffset
         );
 
-        // ❌ [제거 필요] 이 코드는 초기화가 중복됩니다.
-        // this.judgementManager = new RhythmJudgementManager(CORRECT_TIMES_MS);
-
-        // ‼️ [핵심 추가] KeyListener 등록
         this.addKeyListener(new catHandListener());
-        // ‼️ [핵심 추가] 키 이벤트를 받기 위해 포커스 요청
         this.requestFocusInWindow();
     }
 
     @Override
     protected void loadStageSpecificResources() {
+        // 배경 오브젝트 로드
+        box = loadImage("../images/cakeStage_image/stage1/boxAndCookingbowl_back.png");
+        bowl = loadImage("../images/cakeStage_image/stage1/cookingbowl_front.png");
+        egg = loadImage("../images/cakeStage_image/stage1/Egg01_stage1-2.png");
+        dropEgg = loadImage("../images/cakeStage_image/stage1/Egg02_stage1-2.png");
+
         // 가이드 카드병정 이미지 로드
         guideCardImage1 = loadImage("../images/cakeStage_image/stage1/Card01_stage1-2.png");
         guideCardImage2 = loadImage("../images/cakeStage_image/stage1/Card02_stage1-2.png");
@@ -74,38 +79,33 @@ public class CakeStage1_2 extends CakeAnimation {
         catHandImage1 = loadImage("../images/cakeStage_image/stage1/CatHand01_stage1-2.png");
         catHandImage2 = loadImage("../images/cakeStage_image/stage1/CatHand02_stage1-2.png");
 
-        // 1단계 기본 도구 (가위) 로드 (필요없지만 필드가 CakeAnimation에 남아있으므로 로딩만 유지)
+        // 나머지 필드 로딩 (사용되지 않더라도 부모 클래스 필드 유지 위해 로딩)
         playerToolImage = loadImage("../images/cakeStage_image/stage1/Scissors01_stage1-1.png");
-
-        // 재료 이미지 로드 (필요없지만 필드가 CakeAnimation에 남아있으므로 로딩만 유지)
         strawberryBodyImage = loadImage("../images/cakeStage_image/stage1/Strawberry_stage1-1.png");
         shadowImage = loadImage("../images/cakeStage_image/stage1/StrawberryShadow_stage1-1.png");
     }
 
-    // ‼️ [수정] 그리기 메서드 (리스트 접근 전 동기화 블록 추가)
+    // ‼️ [수정] 그리기 메서드
     @Override
     protected void drawStageObjects(Graphics2D g2) {
 
         long adjustedMusicTimeMs = currentMusicTimeMs + SYNC_OFFSET_MS;
 
-        // 💡 새로운 오프셋 값 (예: 500ms)
         final long ADDITIONAL_OFFSET_MS = 100;
 
-        // 1. ⚔️ 카드 이미지 전환 로직 (유지)
+        // 1. ⚔️ 카드 이미지 전환 로직
         boolean isPulseActive = false;
         for (Long startTime : GUIDE_TIMES_MS) {
-            // 루프 안에서 'startTime'에 추가 오프셋을 더해서 사용
-            long offsetStartTime = startTime + ADDITIONAL_OFFSET_MS; // <--- 여기에 추가!
+            long offsetStartTime = startTime + ADDITIONAL_OFFSET_MS;
+            long endTime = offsetStartTime + CARD_TRANSITION_DURATION_MS;
 
-            long endTime = offsetStartTime + CARD_TRANSITION_DURATION_MS; // offsetStartTime 사용
-
-            if (adjustedMusicTimeMs >= offsetStartTime && adjustedMusicTimeMs < endTime) { // offsetStartTime 사용
+            if (adjustedMusicTimeMs >= offsetStartTime && adjustedMusicTimeMs < endTime) {
                 isPulseActive = true;
                 break;
             }
         }
 
-        // 2. 🖼️ 가이드 카드병정 이미지 그리기 (유지)
+        // 2. 🖼️ 가이드 카드병정 이미지 그리기
         Image currentGuideImage = isPulseActive ? guideCardImage2 : guideCardImage1;
         guideCardImage = currentGuideImage;
 
@@ -113,7 +113,47 @@ public class CakeStage1_2 extends CakeAnimation {
             g2.drawImage(guideCardImage, 0, 0, getWidth(), getHeight(), null);
         }
 
-        // 3. 고양이 손
+        // 3. 배경 오브젝트 (박스)
+        if (box != null) {
+            g2.drawImage(box, 0, 0, getWidth(), getHeight(), null);
+        }
+
+        g2.drawImage(egg, 0, 0, getWidth(), getHeight(), null);
+
+        // 4. 🥚 계란 드롭 애니메이션 처리 (박스 앞에, 볼 뒤에)
+        long timeElapsed = currentMusicTimeMs - eggDropStartTime;
+
+        if (isEggDropped && timeElapsed < EGG_DROP_DURATION && dropEgg != null) {
+            // 애니메이션 진행률 (0.0에서 1.0)
+            double progress = (double)timeElapsed / EGG_DROP_DURATION;
+
+            // 떨어지는 Y 위치 계산
+            // 원본 이미지의 계란 위치(y)를 기준으로 아래로 떨어지게 설정
+            int startY = 40; // 이미지의 최상단
+            int dropY = (int) (startY + (EGG_DROP_DISTANCE * progress));
+
+            // 드롭 계란 이미지를 그립니다.
+            g2.drawImage(dropEgg, 550, dropY, 250, 250, null);
+        } else if (isEggDropped && timeElapsed >= EGG_DROP_DURATION) {
+            // 애니메이션이 끝나면 상태 리셋
+            isEggDropped = false;
+        }
+
+
+        // 5. 🥚 기본 계란 이미지 (드롭 애니메이션이 끝났거나 Miss일 때)
+        // 드롭 애니메이션이 진행 중이지 않을 때만 원래 계란 이미지를 그립니다.
+//        if (!isEggDropped || timeElapsed >= EGG_DROP_DURATION) {
+//            if (egg != null) {
+//                g2.drawImage(egg, 0, 0, getWidth(), getHeight(), null);
+//            }
+//        }
+
+        // 6. 🥣 볼 (박스와 계란 위에)
+        if (bowl != null) {
+            g2.drawImage(bowl, 0, 0, getWidth(), getHeight(), null);
+        }
+
+        // 7. 고양이 손
         Image currentCatHandImage = isCatHandActive ? catHandImage2 : catHandImage1;
 
         if (currentCatHandImage != null) {
@@ -128,31 +168,18 @@ public class CakeStage1_2 extends CakeAnimation {
         }
     }
 
-    // ✂️ [핵심 수정] 마우스 리스너 내부 클래스 -> 키 리스너로 변환 (스페이스바)
+    // ✂️ [핵심 수정] 키 리스너 내부 클래스
     private class catHandListener extends KeyAdapter {
 
-        // 💡 [수정] mousePressed -> keyPressed로 변경
         @Override
         public void keyPressed(KeyEvent e) {
-            // ‼️ [핵심 추가] 눌린 키가 스페이스바(VK_SPACE)인지 확인
             if (e.getKeyCode() != KeyEvent.VK_SPACE) {
                 return;
             }
 
-            // ‼️ [수정] 스페이스바가 눌렸을 때 isCatHandActive를 true로 설정
             isCatHandActive = true;
 
-            // ‼️ [수정] 판정 시간 계산 시, JUDGEMENT_OFFSET_MS(30ms)를 사용
-            // (이하 로직은 mousePressed와 동일하게 유지)
             long clickTime = currentMusicTimeMs + JUDGEMENT_OFFSET_MS;
-
-            // ‼️ [핵심 로그 추가] ‼️
-            long adjustedMusicTime = clickTime; // 이미 SYNC_OFFSET_MS가 적용된 시간
-            System.out.println("--------------------------------------------------");
-            System.out.println("[INPUT] Spacebar Pressed!"); // 로그 메시지 수정
-            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
-            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
-            System.out.println("--------------------------------------------------");
 
             // 1. 판정 실행 및 판정 성공 인덱스 획득
             int judgedIndex = judgementManager.handleInput((int)clickTime);
@@ -164,6 +191,19 @@ public class CakeStage1_2 extends CakeAnimation {
             // 2. 판정 결과 문자열 획득
             String judgementResultString = judgementManager.getLastJudgement();
 
+            // ‼️ [핵심 수정] 판정이 Good 이상일 때만 계란 드롭 상태 업데이트
+            if (judgementResultString.equals("PERFECT!") ||
+                    judgementResultString.equals("GREAT!") ||
+                    judgementResultString.equals("GOOD")) {
+
+                isEggDropped = true;
+                eggDropStartTime = currentMusicTimeMs;
+
+            } else {
+                // MISS인 경우 아무것도 떨어지지 않습니다.
+                isEggDropped = false;
+            }
+
             // ‼️ [추가] 판정 결과를 상위 클래스 필드에 저장 및 표시 시간 업데이트
             lastJudgementResult = judgementResultString;
             judgementDisplayStartTime = currentMusicTimeMs;
@@ -171,21 +211,14 @@ public class CakeStage1_2 extends CakeAnimation {
             repaint();
         }
 
-        // 💡 [수정] mouseReleased -> keyReleased로 변경
         @Override
         public void keyReleased(KeyEvent e) {
-            // ‼️ [핵심 추가] 뗀 키가 스페이스바(VK_SPACE)인지 확인
             if (e.getKeyCode() != KeyEvent.VK_SPACE) {
                 return;
             }
 
-            // ‼️ [수정] 스페이스바가 떼어졌을 때 isCatHandActive를 false로 설정
             isCatHandActive = false;
             repaint();
         }
     }
-
-    // 키 입력 시 실행할 스테이지 고유의 추가 로직 제거
-    // @Override
-    // protected void processKeyInput(int keyCode) { ... }
 }
