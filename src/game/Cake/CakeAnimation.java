@@ -16,6 +16,9 @@ public abstract class CakeAnimation extends JPanel {
     protected Image guideCardImage1;
     protected Image guideCardImage2;
 
+    protected Image catHandImage1;
+    protected Image catHandImage2;
+
     protected Image strawberryBodyImage;
     protected Image climbingStraberryImage;
     protected Image eggImage;
@@ -56,6 +59,9 @@ public abstract class CakeAnimation extends JPanel {
     private Image rabbitBar;
     private Image rabbitIcon;
     private Font scoreFont;
+
+    // ⚔️ [핵심 수정] 유저 입력 판정 전용 오프셋 (30ms로 설정)
+    protected static final int JUDGEMENT_OFFSET_MS = -190;
 
     public CakeAnimation(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         setLayout(null);
@@ -319,5 +325,7 @@ public abstract class CakeAnimation extends JPanel {
         public int getSlotIndex() {
             return slotIndex;
         }
+
     }
+
 }

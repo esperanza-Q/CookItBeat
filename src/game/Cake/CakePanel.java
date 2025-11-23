@@ -62,30 +62,30 @@ public class CakePanel extends JPanel implements Runnable {
         add(stage1_1, STAGE1_1_NAME);
 
         // 나머지 스테이지 (더미 객체로 가정)
-        if (CakeStageManager.stageDataList.size() > 1) {
-            CakeStageData stage1_2Data = CakeStageManager.stageDataList.get(1);
-            CakeAnimation stage1_2 = new CakeStage1_2(this, stage1_2Data, initialScoreOffset); // ⚠️ CakeStage1_2 필요
-            stage1_2.setName(STAGE1_2_NAME);
-            add(stage1_2, STAGE1_2_NAME);
-        }
-        if (CakeStageManager.stageDataList.size() > 2) {
-            CakeStageData stage2Data = CakeStageManager.stageDataList.get(2);
-            CakeAnimation stage2 = new CakeStage2(this, stage2Data, initialScoreOffset); // ⚠️ CakeStage2 필요
-            stage2.setName(STAGE2_NAME);
-            add(stage2, STAGE2_NAME);
-        }
-        if (CakeStageManager.stageDataList.size() > 3) {
-            CakeStageData stage3_1Data = CakeStageManager.stageDataList.get(3);
-            CakeAnimation stage3_1 = new CakeStage3_1(this, stage3_1Data, initialScoreOffset); // ⚠️ CakeStage3_1 필요
-            stage3_1.setName(STAGE3_1_NAME);
-            add(stage3_1, STAGE3_1_NAME);
-        }
-        if (CakeStageManager.stageDataList.size() > 4) {
-            CakeStageData stage3_2Data = CakeStageManager.stageDataList.get(4);
-            CakeAnimation stage3_2 = new CakeStage3_2(this, stage3_2Data, initialScoreOffset); // ⚠️ CakeStage3_2 필요
-            stage3_2.setName(STAGE3_2_NAME);
-            add(stage3_2, STAGE3_2_NAME);
-        }
+//        if (CakeStageManager.stageDataList.size() > 1) {
+//            CakeStageData stage1_2Data = CakeStageManager.stageDataList.get(1);
+//            CakeAnimation stage1_2 = new CakeStage1_2(this, stage1_2Data, initialScoreOffset); // ⚠️ CakeStage1_2 필요
+//            stage1_2.setName(STAGE1_2_NAME);
+//            add(stage1_2, STAGE1_2_NAME);
+//        }
+//        if (CakeStageManager.stageDataList.size() > 2) {
+//            CakeStageData stage2Data = CakeStageManager.stageDataList.get(2);
+//            CakeAnimation stage2 = new CakeStage2(this, stage2Data, initialScoreOffset); // ⚠️ CakeStage2 필요
+//            stage2.setName(STAGE2_NAME);
+//            add(stage2, STAGE2_NAME);
+//        }
+//        if (CakeStageManager.stageDataList.size() > 3) {
+//            CakeStageData stage3_1Data = CakeStageManager.stageDataList.get(3);
+//            CakeAnimation stage3_1 = new CakeStage3_1(this, stage3_1Data, initialScoreOffset); // ⚠️ CakeStage3_1 필요
+//            stage3_1.setName(STAGE3_1_NAME);
+//            add(stage3_1, STAGE3_1_NAME);
+//        }
+//        if (CakeStageManager.stageDataList.size() > 4) {
+//            CakeStageData stage3_2Data = CakeStageManager.stageDataList.get(4);
+//            CakeAnimation stage3_2 = new CakeStage3_2(this, stage3_2Data, initialScoreOffset); // ⚠️ CakeStage3_2 필요
+//            stage3_2.setName(STAGE3_2_NAME);
+//            add(stage3_2, STAGE3_2_NAME);
+//        }
 
 
         // 4. 현재 스테이지 설정 및 표시
@@ -161,7 +161,9 @@ public class CakePanel extends JPanel implements Runnable {
                 if (CakeStageManager.nextStage()) {
                     int nextStageIndex = CakeStageManager.getCurrentStage();
                     String nextStageCardName = "";
-                    int dummyScore = 0; // 점수 계산 로직 필요
+
+                    // ‼️ [핵심 수정]: 누적 점수를 가져옵니다.
+                    int totalScore = CakeStageManager.getCumulativeScore();
 
                     // StageManager에 따라 카드 이름 지정
                     if (nextStageIndex == 2) {
@@ -175,7 +177,8 @@ public class CakePanel extends JPanel implements Runnable {
                     }
 
                     if (!nextStageCardName.isEmpty()) {
-                        switchToNextStagePanel(nextStageCardName, dummyScore);
+                        // ‼️ [핵심 수정]: totalScore를 전달합니다.
+                        switchToNextStagePanel(nextStageCardName, totalScore);
                     }
                 } else {
                     System.out.println("게임 완료! (음악 종료)");
@@ -185,16 +188,64 @@ public class CakePanel extends JPanel implements Runnable {
     }
 
     public void switchToNextStagePanel(String cardName, int totalScore) {
-        cardLayout.show(this, cardName);
+//        cardLayout.show(this, cardName);
+//
+//        for (Component comp : getComponents()) {
+//            if (comp instanceof CakeAnimation && comp.getName() != null && comp.getName().equals(cardName)) {
+//                currentStagePanel = (CakeAnimation) comp;
+//
+//                // ‼️ [필수 수정]: CakeStageManager의 누적 점수를 업데이트합니다.
+//                // 이렇게 해야 다음 스테이지 생성자가 totalScore를 받아 초기화할 수 있습니다.
+//                CakeStageManager.setCumulativeScore(totalScore);
+//
+//                // 포커스 이동을 통해 이전 스테이지 리스너 비활성화/새 리스너 활성화
+//                SwingUtilities.invokeLater(() -> currentStagePanel.requestFocusInWindow());
+//                break;
+//            }
+//        }
+        CakeAnimation nextStage = null;
 
+        // 1. 이미 생성된 패널인지 확인 (Stage 1-1은 이미 있을 수 있음)
         for (Component comp : getComponents()) {
-            if (comp instanceof CakeAnimation && comp.getName() != null && comp.getName().equals(cardName)) {
-                currentStagePanel = (CakeAnimation) comp;
-                // 포커스 이동을 통해 이전 스테이지 리스너 비활성화/새 리스너 활성화
-                SwingUtilities.invokeLater(() -> currentStagePanel.requestFocusInWindow());
+            if (comp.getName() != null && comp.getName().equals(cardName)) {
+                nextStage = (CakeAnimation) comp;
                 break;
             }
         }
+
+        // 2. 패널이 없으면 (처음 전환하는 경우), 현재 점수를 넣어 새로 생성
+        if (nextStage == null) {
+            // ‼️ [핵심]: 여기서 totalScore를 initialScoreOffset으로 사용합니다.
+            CakeStageData stageData = CakeStageManager.getCurrentStageData();
+
+            if (cardName.equals(STAGE1_2_NAME)) {
+                nextStage = new CakeStage1_2(this, stageData, totalScore);
+            }
+            else if (cardName.equals(STAGE2_NAME)) {
+                nextStage = new CakeStage2(this, stageData, totalScore);
+            } else if (cardName.equals(STAGE3_1_NAME)) {
+                nextStage = new CakeStage3_1(this, stageData, totalScore);
+            } else if (cardName.equals(STAGE3_2_NAME)) {
+                nextStage = new CakeStage3_2(this, stageData, totalScore);
+            }
+
+            if (nextStage != null) {
+                nextStage.setName(cardName);
+                add(nextStage, cardName);
+            } else {
+                System.err.println("🔴 다음 스테이지(" + cardName + ") 생성 실패.");
+                return;
+            }
+        }
+
+        // 3. 패널 전환 및 포커스 요청
+        cardLayout.show(this, cardName);
+        currentStagePanel = nextStage;
+
+        // 4. CakeStageManager의 누적 점수 업데이트 (유지)
+        CakeStageManager.setCumulativeScore(totalScore);
+
+        SwingUtilities.invokeLater(() -> currentStagePanel.requestFocusInWindow());
     }
 
     public void close() {
@@ -203,4 +254,8 @@ public class CakePanel extends JPanel implements Runnable {
             gameThread.interrupt();
         }
     }
+
+//    public void setInitialScoreOffset(int initialScoreOffset) {
+//        initialScoreOffset = initialScoreOffset;
+//    }
 }
