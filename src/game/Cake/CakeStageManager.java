@@ -7,6 +7,12 @@ import java.util.Arrays;
 import java.util.List;
 
 public class CakeStageManager {
+    private static CakeStageData currentStageData;  // ✅ 추가
+
+    // ✅ [추가] 판정 카운트
+    private static int perfectCount = 0;
+    private static int goodCount = 0;
+    private static int missCount = 0;
 
     private static int currentStage = 0;
     private static int cumulativeScore = 0;
@@ -24,7 +30,7 @@ public class CakeStageManager {
             // 오븐 구간 종료 시간 87000
             87000L,
             96000L, // Stage 3-1 종료 시간 (20.8초)
-            116000L  // Stage 3-2 종료 시간 (26.0초, 최종 종료)
+            108000L  // Stage 3-2 종료 시간 (26.0초, 최종 종료)
     );
 
     private static void initializeStageData() {
@@ -41,16 +47,15 @@ public class CakeStageManager {
     }
 
     public static void startFirstStage() {
-        if (stageDataList == null) {
+        // ✅ stageDataList가 없으면 초기화
+        if (stageDataList == null || stageDataList.isEmpty()) {
             initializeStageData();
         }
-        resetScore();
+
         currentStage = 1;
-
-        // 💡 음악 시작 로직은 CakePanel로 이관되었으므로 여기서는 제거
-
-        loadStage(currentStage);
+        currentStageData = stageDataList.get(0);  // ✅ 확정 세팅
     }
+
 
     // ‼️ [추가] CakePanel에서 시작된 Music 객체를 등록하는 Setter
     public static void setMusic(Music music) {
@@ -62,6 +67,7 @@ public class CakeStageManager {
         currentStage++;
 
         if (currentStage <= stageDataList.size()) {
+            currentStageData = stageDataList.get(currentStage - 1); // ✅ 갱신
             loadStage(currentStage);
             return true;
         } else {
@@ -69,6 +75,7 @@ public class CakeStageManager {
             return false;
         }
     }
+
 
     private static void loadStage(int stageNumber) {
         if (stageNumber > stageDataList.size() || stageNumber < 1) return;
@@ -82,9 +89,34 @@ public class CakeStageManager {
         }
     }
 
+    public static void resetGame() {
+        currentStage = 1;
+        currentStageData = null;
+        cumulativeScore = 0;
+        perfectCount = goodCount = missCount = 0;
+
+        // stageDataList는 유지할지/새로 로드할지 너 구조에 맞게
+    }
+
+
     public static void resetScore() {
         cumulativeScore = 0;
+
+        // ✅ [추가] 카운트도 리셋
+        perfectCount = 0;
+        goodCount = 0;
+        missCount = 0;
     }
+
+    // ✅ [추가] 카운트 증가
+    public static void addPerfect() { perfectCount++; }
+    public static void addGood()    { goodCount++; }
+    public static void addMiss()    { missCount++; }
+
+    // ✅ [추가] Getter
+    public static int getPerfectCount() { return perfectCount; }
+    public static int getGoodCount()    { return goodCount; }
+    public static int getMissCount()    { return missCount; }
 
     // 💡 [추가] 누적 점수 설정/획득 Getter/Setter
     public static int getCumulativeScore() {
@@ -100,11 +132,15 @@ public class CakeStageManager {
     public static Music getMusic() { return currentMusic; }
     public static int getCurrentStage() { return currentStage; }
     public static CakeStageData getCurrentStageData() {
-        if (currentStage > 0 && currentStage <= stageDataList.size()) {
-            return stageDataList.get(currentStage - 1);
-        }
-        return null;
+        if (currentStageData != null) return currentStageData; // ✅ 우선 반환
+
+        if (stageDataList == null || stageDataList.isEmpty()) return null;
+        int idx = Math.max(0, currentStage - 1);
+        if (idx >= stageDataList.size()) idx = stageDataList.size() - 1;
+        return stageDataList.get(idx);
     }
+
+
 
     public static long getCurrentStageEndTime() {
         int index = currentStage - 1;

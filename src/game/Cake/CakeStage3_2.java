@@ -175,31 +175,21 @@ public class CakeStage3_2 extends CakeAnimation {
     }
 
     protected void processSpaceKeyPressLogic() {
-        // 1. 판정 로직 수행
         if (judgementManager != null) {
 
-            // ‼️ 오프셋 적용된 음악 시간 계산: 입력 시간을 47ms 앞으로 당겨서 보정
             int adjustedMusicTime = currentMusicTimeMs + JUDGEMENT_OFFSET_MS;
 
-            // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
-            System.out.println("--------------------------------------------------");
-            System.out.println("[INPUT] Space Bar Pressed!");
-            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
-            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
-            System.out.println("--------------------------------------------------");
-
-            // ‼️ 조정된 시간을 판정 함수에 전달
             judgementManager.handleInput(adjustedMusicTime);
 
-            // 💡 [핵심 추가] judgementManager의 현재 점수를 StageManager에 저장
             int currentTotalScore = judgementManager.getScore();
             CakeStageManager.setCumulativeScore(currentTotalScore);
 
-            lastJudgementResult = judgementManager.getLastJudgement();
-            judgementDisplayStartTime = currentMusicTimeMs;
+            // ✅ 여기서 registerJudgement로 통일!
+            String j = judgementManager.getLastJudgement();
+            registerJudgement(j);   // <- 카운트 증가 + lastJudgementResult 세팅까지 한 번에
         }
-
     }
+
 
 
     @Override

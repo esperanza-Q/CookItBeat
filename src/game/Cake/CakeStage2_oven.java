@@ -101,9 +101,7 @@ public class CakeStage2_oven extends CakeAnimation {
                     }
 
                     // ---- 3) 부모 판정 이미지 시스템에 전달 ----
-                    lastJudgementResult = timingJudge;
-                    judgementDisplayStartTime = t;
-
+                    registerJudgement(timingJudge);
                     judged = true;
 
                     // ---- 4) 띵 사운드 ----
@@ -186,11 +184,13 @@ public class CakeStage2_oven extends CakeAnimation {
 
         // ✅ ENTER 안 누르면 자동 MISS (유예 후)
         if (!judged && !autoMissDone && t >= DING_TIME_MS + AUTO_MISS_GRACE_MS) {
-            lastJudgementResult = "MISS";
-            judgementDisplayStartTime = t;
+
+            // ✅ 자동 MISS 카운트 등록
+            registerJudgement("MISS");
 
             judged = true;
             autoMissDone = true;
         }
+
     }
 }

@@ -20,6 +20,8 @@ public class CakePanel extends JPanel implements Runnable {
     // ‼️ [필수] Music 객체를 CakePanel의 필드로 선언
     private Music backgroundMusic;
 
+    private boolean resultShown = false;
+
     private static final String STAGE1_1_NAME = "Stage1-1";
     private static final String STAGE1_2_NAME = "Stage1-2";
     private static final String STAGE2_NAME = "Stage2";
@@ -27,10 +29,20 @@ public class CakePanel extends JPanel implements Runnable {
     private static final String STAGE3_1_NAME = "Stage3-1";
     private static final String STAGE3_2_NAME = "Stage3-2";
 
+    private static final String RESULT_NAME = "CakeResult";
 
-    public CakePanel(/* GameFrame frame */) {
+
+
+    public CakePanel( GameFrame frame) {
+
+        this.gameFrame = frame;
         setLayout(cardLayout);
         setFocusable(true);
+
+        CakeStageManager.resetGame();   // ✅ 있으면 호출
+        CakeStageManager.startFirstStage();
+
+
         // this.gameFrame = frame; // GameFrame을 사용하는 경우 주석 해제
 
         // 1. 스테이지 데이터 초기화
@@ -101,6 +113,21 @@ public class CakePanel extends JPanel implements Runnable {
         SwingUtilities.invokeLater(() -> currentStagePanel.requestFocusInWindow());
     }
 
+
+    // ✅ ResultPanel에서 부를 로비 이동 함수
+    public void goToLobby() {
+        CakeStageManager.stopMusic();
+        close(); // 게임 스레드/음악 정리
+
+        if (gameFrame != null) {
+            gameFrame.showLobbyScreen(gameFrame.getCurrentUser());
+            // 너 GameFrame에 있는 로비 전환 메서드 이름에 맞게만 바꿔줘
+            // 예) gameFrame.showLobbyScreen(username);
+            // 예) gameFrame.showLobbyPanel();
+        }
+    }
+
+
     @Override
     public void run() {
         long lastTime = System.nanoTime();
@@ -109,8 +136,8 @@ public class CakePanel extends JPanel implements Runnable {
         double delta = 0;
 
         // 게임 루프 조건
-        while (CakeStageManager.getCurrentStage() <= CakeStageManager.stageDataList.size() &&
-                backgroundMusic != null && backgroundMusic.isAlive()) {
+        while (!resultShown &&
+                CakeStageManager.getCurrentStage() <= CakeStageManager.stageDataList.size()) {
 
             long now = System.nanoTime();
             delta += (now - lastTime) / timePerTick;
@@ -118,18 +145,14 @@ public class CakePanel extends JPanel implements Runnable {
 
             if (delta >= 1) {
                 updateGameLogic();
-                if (currentStagePanel != null) {
-                    currentStagePanel.repaint();
-                }
+                if (currentStagePanel != null) currentStagePanel.repaint();
                 delta--;
             }
-            try {
-                // 게임 스레드의 CPU 점유율을 낮추기 위한 sleep
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+
+            try { Thread.sleep(1); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
+
 
         // 게임 종료 시
         CakeStageManager.stopMusic();
@@ -144,51 +167,93 @@ public class CakePanel extends JPanel implements Runnable {
         });
     }
 
+    private void showResultPanel(int totalScore) {
+        CakeResultPanel resultPanel = null;
+
+        // 이미 있는지 찾기
+        for (Component comp : getComponents()) {
+            if (comp instanceof CakeResultPanel) {
+                resultPanel = (CakeResultPanel) comp;
+                break;
+            }
+        }
+
+        // 없으면 새로 생성
+        if (resultPanel == null) {
+            resultPanel = new CakeResultPanel(this);
+            resultPanel.setName(RESULT_NAME);
+            add(resultPanel, RESULT_NAME);
+        }
+
+        resultPanel.setResult(totalScore);
+
+        cardLayout.show(this, RESULT_NAME);
+
+        // 포커스 주기
+        CakeResultPanel finalResultPanel = resultPanel;
+        SwingUtilities.invokeLater(finalResultPanel::requestFocusInWindow);
+    }
+
+
     private void updateGameLogic() {
         Music music = CakeStageManager.getMusic();
 
-        // 1. ‼️ [핵심 로직] 현재 스테이지의 업데이트 로직 호출 (그림자 생성/소멸 등)
         if (currentStagePanel != null) {
             currentStagePanel.updateStageLogic();
         }
 
-        // 2. 스테이지 전환 체크
-        if (music != null && music.isAlive()) {
-            int currentMusicTime = music.getTime();
-            long stageEndTime = CakeStageManager.getCurrentStageEndTime();
+        if (music == null) return;
 
-            if (stageEndTime != -1 && currentMusicTime >= stageEndTime) {
+        int currentMusicTime = music.getTime(); // ✅ alive 아니어도 마지막 시간은 얻을 수 있다고 가정
+        long stageEndTime = CakeStageManager.getCurrentStageEndTime();
 
-                if (CakeStageManager.nextStage()) {
-                    int nextStageIndex = CakeStageManager.getCurrentStage();
-                    String nextStageCardName = "";
+        // ✅ 1) 정상적으로 endTime 도달한 경우
+        if (stageEndTime != -1 && currentMusicTime >= stageEndTime) {
 
-                    // ‼️ [핵심 수정]: 누적 점수를 가져옵니다.
-                    int totalScore = CakeStageManager.getCumulativeScore();
+            if (CakeStageManager.nextStage()) {
+                int nextStageIndex = CakeStageManager.getCurrentStage();
+                String nextStageCardName = "";
 
-                    // StageManager에 따라 카드 이름 지정
-                    if (nextStageIndex == 2) {
-                        nextStageCardName = STAGE1_2_NAME;
-                    } else if (nextStageIndex == 3) {
-                        nextStageCardName = STAGE2_NAME;
-                    } else if (nextStageIndex == 4) {
-                        nextStageCardName = STAGE2_OVEN_NAME;
-                    } else if (nextStageIndex == 5) {
-                        nextStageCardName = STAGE3_1_NAME;
-                    } else if (nextStageIndex == 6) {
-                        nextStageCardName = STAGE3_2_NAME;
-                    }
+                int totalScore = CakeStageManager.getCumulativeScore();
 
-                    if (!nextStageCardName.isEmpty()) {
-                        // ‼️ [핵심 수정]: totalScore를 전달합니다.
-                        switchToNextStagePanel(nextStageCardName, totalScore);
-                    }
-                } else {
-                    System.out.println("게임 완료! (음악 종료)");
+                if (nextStageIndex == 2) nextStageCardName = STAGE1_2_NAME;
+                else if (nextStageIndex == 3) nextStageCardName = STAGE2_NAME;
+                else if (nextStageIndex == 4) nextStageCardName = STAGE2_OVEN_NAME;
+                else if (nextStageIndex == 5) nextStageCardName = STAGE3_1_NAME;
+                else if (nextStageIndex == 6) nextStageCardName = STAGE3_2_NAME;
+
+                if (!nextStageCardName.isEmpty()) {
+                    switchToNextStagePanel(nextStageCardName, totalScore);
                 }
+
+            } else {
+                finishToResult();
+            }
+            return;
+        }
+
+        // ✅ 2) 음악이 먼저 끝나버린 경우(116초 전에 끝나면 여기로 옴)
+        if (!music.isAlive() && !resultShown) {
+            // 마지막 스테이지까지 왔으면 결과로
+            if (CakeStageManager.getCurrentStage() >= CakeStageManager.stageDataList.size()) {
+                finishToResult();
             }
         }
     }
+
+    private void finishToResult() {
+        System.out.println("게임 완료! 결과 패널로 이동");
+
+        int totalScore = CakeStageManager.getCumulativeScore();
+        showResultPanel(totalScore);
+        resultShown = true;
+
+        if (backgroundMusic != null) {
+            backgroundMusic.close();
+            backgroundMusic = null;
+        }
+    }
+
 
     public void switchToNextStagePanel(String cardName, int totalScore) {
 //        cardLayout.show(this, cardName);

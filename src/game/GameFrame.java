@@ -76,15 +76,16 @@ public class GameFrame extends JFrame {
     }
 
     public void showSpaceScreen() {
-        getContentPane().removeAll(); // 기존 화면 제거
-        getContentPane().add(new SpacePanel());
-        revalidate(); // 레이아웃 다시 계산
-        repaint(); // 화면 다시 그리기
+        getContentPane().removeAll();
+        getContentPane().add(new SpacePanel(this));  // ✅ frame 넘겨주기
+        revalidate();
+        repaint();
     }
+
 
     public void showCakeScreen() {
         getContentPane().removeAll(); // 기존 화면 제거
-        getContentPane().add(new CakePanel());
+        getContentPane().add(new CakePanel(this));
         revalidate(); // 레이아웃 다시 계산
         repaint(); // 화면 다시 그리기
     }
