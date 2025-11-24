@@ -22,6 +22,8 @@ public class HomePanel extends JPanel {
         this.gameFrame = frame;
         setLayout(new BorderLayout());
 
+        LobbyBgmManager.start();
+
         // 타이틀
         background = new ImageIcon(Main.class.getResource("../images/cakeStage_image/stage1/Background_stage1-1.png")).getImage();
         cloud = new ImageIcon(Main.class.getResource("../images/mainUI/main_cloud.png")).getImage();
@@ -75,5 +77,6 @@ public class HomePanel extends JPanel {
         g.drawImage(tool2,150,10,927, 567, this);
         g.drawImage(title,150,10,927, 567, this);
     }
+
 }
 

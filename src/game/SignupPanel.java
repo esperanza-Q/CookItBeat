@@ -12,6 +12,10 @@ public class SignupPanel extends JPanel {
 
     public SignupPanel(GameFrame frame) {
         this.gameFrame = frame;
+
+        // ✅ 로비 BGM 유지
+        LobbyBgmManager.start();
+
         setLayout(new GridBagLayout());
         setBackground(new Color(240, 240, 250));
 

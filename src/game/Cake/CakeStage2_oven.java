@@ -6,6 +6,7 @@ import game.rhythm.RhythmJudgementManager;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,6 +18,9 @@ public class CakeStage2_oven extends CakeAnimation {
     // ====== 오븐 리소스 ======
     private Image oven_base;
     private Image oven_judgment;  // fallback용
+
+    // ✅ [추가] ENTER 키 가이드
+    private Image keyEnterGuide;
 
     // ✅ judgement1~9 프레임
     private static final int JUDGEMENT_FRAME_COUNT = 9;
@@ -87,7 +91,6 @@ public class CakeStage2_oven extends CakeAnimation {
 
                         if (diffToDing <= LENIENT_PERFECT_MS) {
                             timingJudge = "PERFECT!";
-                            // MISS 패널티(-10) 무시하고 PERFECT 점수로 덮기
                             judgementManager.setScore(beforeScore + 100);
 
                         } else if (diffToDing <= LENIENT_GOOD_MS) {
@@ -95,7 +98,7 @@ public class CakeStage2_oven extends CakeAnimation {
                             judgementManager.setScore(beforeScore + 50);
 
                         } else {
-                            timingJudge = "MISS"; // 윈도우 안인데도 애매하면 MISS 유지
+                            timingJudge = "MISS";
                             judgementManager.setScore(beforeScore - 10);
                         }
                     }
@@ -120,7 +123,7 @@ public class CakeStage2_oven extends CakeAnimation {
         });
     }
 
-        @Override
+    @Override
     protected void loadStageSpecificResources() {
         oven_base = loadImage("../images/cakeStage_image/oven/oven_judgmentX.png");
         oven_judgment = loadImage("../images/cakeStage_image/oven/oven_judgment.png");
@@ -131,6 +134,9 @@ public class CakeStage2_oven extends CakeAnimation {
             String path = "../images/cakeStage_image/oven/judgement" + (i + 1) + ".png";
             judgementFrames[i] = loadImage(path);
         }
+
+        // ✅ [추가] ENTER 키 가이드 로드
+        keyEnterGuide = loadImage("../images/cakeStage_image/stage2/cake_keyEnter.png");
     }
 
     // 현재 시간이 몇 번째 비트 구간인지 (0~7)
@@ -171,12 +177,31 @@ public class CakeStage2_oven extends CakeAnimation {
             g2.drawImage(frameToDraw, 0, 0, null);
         }
 
-        // ❌ 텍스트 판정 출력 제거 (이제 CakeAnimation.drawUI가 이미지로 처리)
+        // ✅ [추가] ENTER 키 가이드 오버레이 (투명도 낮게)
+        // 판정되기 전까지만 보여주기
+        if (!judged && keyEnterGuide != null) {
+            Composite old = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.9f));
+
+
+            float scale = 0.75f;
+            int x = 875;   // 원하는 위치
+            int y = 80;
+
+
+            AffineTransform at = new AffineTransform();
+            at.translate(x, y);
+            at.scale(scale, scale);
+
+            // 원본 PNG가 위치 포함이면 0,0에 그대로
+            g2.drawImage(keyEnterGuide, x, y, null);
+
+            g2.setComposite(old);
+        }
     }
 
     // updateStageLogic() 안에서
     private static final int AUTO_MISS_GRACE_MS = 700; // 200 → 700 정도로
-
 
     @Override
     public void updateStageLogic() {
@@ -191,6 +216,5 @@ public class CakeStage2_oven extends CakeAnimation {
             judged = true;
             autoMissDone = true;
         }
-
     }
 }
