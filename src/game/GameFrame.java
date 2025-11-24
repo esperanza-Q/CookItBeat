@@ -76,6 +76,7 @@ public class GameFrame extends JFrame {
     }
 
     public void showSpaceScreen() {
+        LobbyBgmManager.stop();
         getContentPane().removeAll();
         getContentPane().add(new SpacePanel(this));  // ✅ frame 넘겨주기
         revalidate();
@@ -84,6 +85,7 @@ public class GameFrame extends JFrame {
 
 
     public void showCakeScreen() {
+        LobbyBgmManager.stop();
         getContentPane().removeAll(); // 기존 화면 제거
         getContentPane().add(new CakePanel(this));
         revalidate(); // 레이아웃 다시 계산

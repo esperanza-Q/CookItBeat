@@ -10,6 +10,10 @@ public class LoginPanel extends JPanel {
 
     public LoginPanel(GameFrame frame) {
         this.gameFrame = frame;
+
+        // ✅ 로비 BGM 유지 (Home에서 켜졌으면 그대로, 아니면 여기서 켜짐)
+        LobbyBgmManager.start();
+
         setLayout(new GridBagLayout());
         setBackground(new Color(240, 240, 250));
 

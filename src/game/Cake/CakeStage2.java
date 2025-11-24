@@ -21,14 +21,29 @@ public class CakeStage2 extends CakeAnimation {
     private Image guide_whipping;
     private Image my_whipping;
 
-    private static final String MIX_SFX = "bowl_mixing.mp3";
+    private static final String MIX_SFX = "bowl_mixing2.mp3";
+
+    // ✅ 키 가이드 이미지 (추가)
+    private Image keyAImage, keyDImage, keySImage, keyWImage;
+    private Image currentKeyGuideImage = null;
+
+    // 🔹 가이드가 화면에 유지될 시간 (ms) (SpaceStage2와 동일)
+    private static final int GUIDE_SHOW_DURATION_MS = 2500;
 
     // ====== Stage2 내부 처리 기록 ======
     private final Set<Integer> processedIndices = new HashSet<>();
 
     // ====== 회전 애니메이션 설정 ======
+    // ====== 회전 애니메이션 설정 ======
     private static final int WHIP_ROT_DURATION_MS = 220;
-    private static final double WHIP_ROT_ANGLE = Math.toRadians(30);
+
+    // 기존 30도는 가이드용으로 유지
+    private static final double GUIDE_WHIP_ROT_ANGLE = Math.toRadians(30);
+
+    // ✅ 내 휘핑은 더 작게 (예: 15~20도 사이 추천)
+    private static final double MY_WHIP_ROT_ANGLE = Math.toRadians(18);
+
+
 
     // 가이드/내 휘핑 회전 상태
     private long guideWhipStartMs = -1;
@@ -44,21 +59,34 @@ public class CakeStage2 extends CakeAnimation {
 
     // ✅ 가이드 비트가 어떤 키(W/A/S/D)인지 지정
     private static final List<Integer> GUIDE_KEYS = Arrays.asList(
-            KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,
-            KeyEvent.VK_W, KeyEvent.VK_W,
+            // ── 구간 1 (7개, W)
+            KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,
+
+            // ── 구간 2 (9개, D)
             KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,
-            KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,
-            KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S,
+            KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,
+
+            // ── 구간 3 (5개, A)
+            KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,
+
+            // ── 구간 4 (4개, S)
             KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S
     );
 
+
     // ✅ 유저 정답 노트가 어떤 키인지 지정
     private static final List<Integer> CORRECT_KEYS = Arrays.asList(
-            KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,
-            KeyEvent.VK_W, KeyEvent.VK_W,
+            // ── 구간 1 (7개, W)
+            KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,
+
+            // ── 구간 2 (9개, D)
             KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,
-            KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,
-            KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S,
+            KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,
+
+            // ── 구간 3 (5개, A)
+            KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,
+
+            // ── 구간 4 (4개, S)
             KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S, KeyEvent.VK_S
     );
 
@@ -226,36 +254,93 @@ public class CakeStage2 extends CakeAnimation {
         }
     }
 
+    // ✅ [추가] 가이드 타이밍에 맞춰 키 이미지 선택
+    private void updateKeyGuideByTime(long t) {
+        currentKeyGuideImage = null;
+
+        for (int i = 0; i < GUIDE_TIMES_MS.size(); i++) {
+            long start = GUIDE_TIMES_MS.get(i);
+            long end = start + GUIDE_SHOW_DURATION_MS;
+
+            if (t >= start && t <= end) {
+                int keyCode = GUIDE_KEYS.get(i);
+                switch (keyCode) {
+                    case KeyEvent.VK_A:
+                        currentKeyGuideImage = keyAImage;
+                        break;
+                    case KeyEvent.VK_D:
+                        currentKeyGuideImage = keyDImage;
+                        break;
+                    case KeyEvent.VK_S:
+                        currentKeyGuideImage = keySImage;
+                        break;
+                    case KeyEvent.VK_W:
+                        currentKeyGuideImage = keyWImage;
+                        break;
+                }
+                return;
+            }
+        }
+    }
+
     @Override
     protected void loadStageSpecificResources() {
         guide_whipping = loadImage("../images/cakeStage_image/stage2/whipping_green_doughO.png");
-        my_whipping = loadImage("../images/cakeStage_image/stage2/whipping_blue_doughO.png");
+        my_whipping    = loadImage("../images/cakeStage_image/stage2/whipping_blue_doughO.png");
+
+        // ✅ [추가] 케이크 스테이지용 키 가이드 이미지 로드
+        keyAImage = loadImage("../images/cakeStage_image/stage2/cake_keyA.png");
+        keyDImage = loadImage("../images/cakeStage_image/stage2/cake_keyD.png");
+        keySImage = loadImage("../images/cakeStage_image/stage2/cake_keyS.png");
+        keyWImage = loadImage("../images/cakeStage_image/stage2/cake_keyW.png");
     }
 
     @Override
     protected void drawStageObjects(Graphics2D g2) {
         long adjustedMusicTimeMs = currentMusicTimeMs + SYNC_OFFSET_MS;
 
-        //updateAutoMiss(adjustedMusicTimeMs);
         triggerGuideWhipIfNeeded(adjustedMusicTimeMs);
 
-        drawRotatingWhip(
-                g2, guide_whipping,
+        // ✅ [추가] 키 가이드 갱신
+        updateKeyGuideByTime(adjustedMusicTimeMs);
+
+        // 가이드: 중앙 회전 그대로
+        drawRotatingWhip(g2, guide_whipping,
                 GUIDE_WHIP_X, GUIDE_WHIP_Y, GUIDE_WHIP_W, GUIDE_WHIP_H,
                 guideWhipStartMs, adjustedMusicTimeMs,
-                guideWhipBaseAngleRad,
-                guideWhipRotSign,
-                WHIP_ROT_DURATION_MS
+                guideWhipBaseAngleRad, guideWhipRotSign,
+                WHIP_ROT_DURATION_MS,
+                GUIDE_WHIP_ROT_ANGLE,
+                0.5, 0.5
         );
 
-        drawRotatingWhip(
-                g2, my_whipping,
+// ✅ 내 휘핑: 손잡이 쪽(예: 아래쪽)으로 pivot 이동
+        drawRotatingWhip(g2, my_whipping,
                 MY_WHIP_X, MY_WHIP_Y, MY_WHIP_W, MY_WHIP_H,
                 myWhipStartMs, adjustedMusicTimeMs,
-                myWhipBaseAngleRad,
-                myWhipRotSign,
-                WHIP_ROT_DURATION_MS
+                myWhipBaseAngleRad, myWhipRotSign,
+                WHIP_ROT_DURATION_MS,
+                MY_WHIP_ROT_ANGLE,
+                0.50, 0.70   // ← 여기 숫자 바꾸면서 맞추면 됨 (y가 클수록 아래쪽 기준)
         );
+        // ✅ [추가] 키 가이드 이미지 그리기 (SpaceStage2 느낌 그대로)
+        if (currentKeyGuideImage != null) {
+            Graphics2D gGuide = (Graphics2D) g2.create();
+
+            float alpha = 0.9f;
+            gGuide.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+
+            float scale = 0.85f; // 크기 필요하면 조절
+            int w = (int)(currentKeyGuideImage.getWidth(this) * scale);
+            int h = (int)(currentKeyGuideImage.getHeight(this) * scale);
+
+            int padding = 40;
+            int x = getWidth() - w - 200;  // 오른쪽에서 200px
+            int y = getHeight() - h - 400; // 아래에서 400px
+
+            gGuide.drawImage(currentKeyGuideImage, x, y, w, h, this);
+            gGuide.dispose();
+        }
     }
 
     private void drawRotatingWhip(Graphics2D g2, Image img,
@@ -263,28 +348,32 @@ public class CakeStage2 extends CakeAnimation {
                                   long startMs, long nowMs,
                                   double baseAngleRad,
                                   double rotSign,
-                                  long visibleMs) {
+                                  long visibleMs,
+                                  double rotAngleRad,
+                                  double pivotRelX, double pivotRelY) {  // ✅ 추가
 
         if (img == null || startMs < 0) return;
 
         long dt = nowMs - startMs;
-        if (dt < 0) return;
-        if (dt > visibleMs) return;
+        if (dt < 0 || dt > visibleMs) return;
 
         double t = Math.min(1.0, dt / (double) WHIP_ROT_DURATION_MS);
-        double angle = baseAngleRad + rotSign * WHIP_ROT_ANGLE * t;
+        double angle = baseAngleRad + rotSign * rotAngleRad * t;
 
         AffineTransform oldTx = g2.getTransform();
         g2.setTransform(new AffineTransform());
 
-        double pivotX = x + w / 2.0;
-        double pivotY = y + h / 2.0;
+        // ✅ pivot을 중앙이 아니라 상대 위치로
+        double pivotX = x + w * pivotRelX;
+        double pivotY = y + h * pivotRelY;
 
         g2.rotate(angle, pivotX, pivotY);
         g2.drawImage(img, x, y, w, h, null);
 
         g2.setTransform(oldTx);
     }
+
+
 
     private void updateAutoMiss(long nowMs) {
         List<Long> timings = judgementManager.getCorrectTimings();
@@ -298,7 +387,6 @@ public class CakeStage2 extends CakeAnimation {
                 judgementManager.forceMiss((int) nowMs);
                 processedIndices.add(i);
 
-                // ✅ 자동 MISS도 카운트/판정UI 등록
                 registerJudgement("MISS");
             }
         }

@@ -22,6 +22,8 @@ public class LobbyPanel extends JPanel {
         setLayout(null);
         frame.setLayout(new BorderLayout());
 
+        LobbyBgmManager.start();
+
         background = new ImageIcon(Main.class.getResource("../images/cakeStage_image/stage1/Background_stage1-1.png")).getImage();
         alienTxt = new ImageIcon(Main.class.getResource("../images/mainUI/alienStage_txt.png")).getImage();
         cakeTxt = new ImageIcon(Main.class.getResource("../images/mainUI/cakeStage_txt.png")).getImage();
