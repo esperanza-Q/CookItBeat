@@ -36,7 +36,7 @@ public class CakeStageManager {
         stageDataList.add(new CakeStageData(2, "재료 손질 (넣기)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage1/Background_stage1-2.png", dummyTimings));
         stageDataList.add(new CakeStageData(3, "반죽 만들기", GAME_MUSIC_FILE, "../images/cakeStage_image/stage2/dough_background_bowlO.png", dummyTimings));
         stageDataList.add(new CakeStageData(4, "오븐", GAME_MUSIC_FILE, "../images/cakeStage_image/oven/oven_background.png", dummyTimings));
-        stageDataList.add(new CakeStageData(5, "몽환 케이크 데코 (휘핑)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage3/Background_stage3-1.png", dummyTimings));
+        stageDataList.add(new CakeStageData(5, "몽환 케이크 데코 (휘핑)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage3/Background2_stage3-1.png", dummyTimings));
         stageDataList.add(new CakeStageData(6, "몽환 케이크 데코 (딸기)", GAME_MUSIC_FILE, "../images/cakeStage_image/stage3/Background_stage3-2.png", dummyTimings));
     }
 

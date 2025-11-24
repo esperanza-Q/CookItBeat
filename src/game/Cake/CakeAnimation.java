@@ -33,8 +33,11 @@ public abstract class CakeAnimation extends JPanel {
     protected Image guideStick;
     protected Image creamPiping1;
     protected Image creamPiping2; // 플레이어 도구 짤주머니
+    protected Image creamRePiping1;
+    protected Image creamRePiping2; // 플레이어 도구 짤주머니
 
     protected Image creamCat;   // 크림 짜는 고양이
+    protected Image creamCat2;   // 크림 짜는 고양이
     protected Image[] cakeCream; // 옆면 크림
 
     protected int currentMusicTimeMs = 0; // 현재 음악 재생 시간

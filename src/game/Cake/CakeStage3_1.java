@@ -5,6 +5,9 @@ import game.rhythm.RhythmJudgementManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +16,14 @@ public class CakeStage3_1 extends CakeAnimation {
 
     private CakePanel controller;
     protected RhythmJudgementManager judgementManager;
-    private static final int JUDGEMENT_OFFSET_MS = -180;
+    private static final int JUDGEMENT_OFFSET_MS = -80;
 
     private Image cardImage = guideCardImage1;
+    private Image currentPipingImage = creamRePiping1;
+    private Image currentCatImage = creamCat;
+    private boolean keyPressed;
+
+    private boolean aPressed, dPressed, sPressed, fPressed;
 
     private static final int[] GUIDE_TIMES_INT = {
             89290, 89495, 89700, 89910,
@@ -63,12 +71,204 @@ public class CakeStage3_1 extends CakeAnimation {
 
     private static final int ANIMATION_FRAME_RATE = 150; // 애니메이션 프레임 전환 속도 (ms)
 
+    public class RhythmNote {
+        public long targetTime; // 이 노트를 쳐야 할 시스템 시간 (ms)
+        public int requiredKey; // VK_A, VK_S 등
+        public int finalDrawX;  // 이 노트를 성공적으로 쳤을 때 그려질 X 위치
+        public int finalDrawY;  // 이 노트를 성공적으로 쳤을 때 그려질 Y 위치
+        public Image image;     // 성공적으로 쳤을 때 그려질 이미지
+
+        public RhythmNote(long time, int key, int x, int y, Image img) {
+            this.targetTime = time;
+            this.requiredKey = key;
+            this.finalDrawX = x;
+            this.finalDrawY = y;
+            this.image = img;
+        }
+    }
+
+    // 쳐야 할 노트 (악보)
+    private List<RhythmNote> beatMap = new ArrayList<>();
+    // 성공적으로 쳐서 화면에 남아있어야 할 이미지들 (크림 레이어)
+    private List<HitResult> drawnCreams = new ArrayList<>();
+    private List<HitResult> drawnBigCreams = new ArrayList<>();
+    private final int SUCCESS_WINDOW = 150; // 판정 시간 창 (ms)
+
+    // (예시) beatMap 초기화: 각 시점과 위치를 미리 정의
+    public void setupBeatMap() {
+        // 1번째 A: 1초 후 (X=100)
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[0], KeyEvent.VK_A, 250, 380, decoCream));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[1], KeyEvent.VK_S, 443, 430, decoCream));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[2], KeyEvent.VK_D, 636, 380, decoCream));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[3], KeyEvent.VK_F, 830, 430, decoCream));
+
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[4], KeyEvent.VK_A, 250, 480, decoCream));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[5], KeyEvent.VK_S, 443, 530, decoCream));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[6], KeyEvent.VK_D, 636, 480, decoCream));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[7], KeyEvent.VK_F, 830, 530, decoCream));
+
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[8], KeyEvent.VK_S, 0, 0, cakeCream[0]));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[9], KeyEvent.VK_F, 0, 0, cakeCream[1]));
+        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[10], KeyEvent.VK_F, 0, 0, cakeCream[2]));
+    }
+
+    public class HitResult {
+        public Image image;
+        public int x;
+        public int y;
+
+        public HitResult(Image img, int x, int y) {
+            this.image = img;
+            this.x = x;
+            this.y = y;
+        }
+    }
+
 
     public CakeStage3_1(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
 
         judgementManager = new RhythmJudgementManager(convertToLongArray(USER_PRESS_TIMES_INT), initialScoreOffset);
+        setupBeatMap();
+        initializeKeyTracking();
+    }
+
+    private void initializeKeyTracking() {
+        this.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                // *** 핵심: 눌린 키 코드를 확인하여 분기 처리합니다. ***
+                int keyCode = e.getKeyCode();
+                keyPressed = true;
+                if (keyCode == KeyEvent.VK_A) {
+                    processSpaceKeyPressLogic();
+                    if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
+                        // 1. VK_A를 요구하는 가장 가까운 노트 찾기
+                        RhythmNote targetNote = findClosestNote(currentMusicTimeMs, KeyEvent.VK_A);
+                        HitResult result = new HitResult(
+                                targetNote.image,
+                                targetNote.finalDrawX,
+                                targetNote.finalDrawY
+                        );
+                        // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
+                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        else drawnBigCreams.add(result);
+
+                        // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
+                        beatMap.remove(targetNote);
+
+                        repaint(); // 화면 갱신
+                    }
+
+                } else if (keyCode == KeyEvent.VK_S) {
+                    processSpaceKeyPressLogic();
+                    if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
+                        // 1. VK_A를 요구하는 가장 가까운 노트 찾기
+                        RhythmNote targetNote = findClosestNote(currentMusicTimeMs, KeyEvent.VK_S);
+                        HitResult result = new HitResult(
+                                targetNote.image,
+                                targetNote.finalDrawX,
+                                targetNote.finalDrawY
+                        );
+                        // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
+                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        else drawnBigCreams.add(result);
+
+                        // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
+                        beatMap.remove(targetNote);
+
+                        repaint(); // 화면 갱신
+                    }
+
+                } else if (keyCode == KeyEvent.VK_D) {
+                    processSpaceKeyPressLogic();
+                    if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
+                        // 1. VK_A를 요구하는 가장 가까운 노트 찾기
+                        RhythmNote targetNote = findClosestNote(currentMusicTimeMs, KeyEvent.VK_D);
+                        HitResult result = new HitResult(
+                                targetNote.image,
+                                targetNote.finalDrawX,
+                                targetNote.finalDrawY
+                        );
+                        // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
+                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        else drawnBigCreams.add(result);
+
+                        // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
+                        beatMap.remove(targetNote);
+
+                        repaint(); // 화면 갱신
+                    }
+
+                } else if (keyCode == KeyEvent.VK_F) {
+                    processSpaceKeyPressLogic();
+                    if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
+                        // 1. VK_A를 요구하는 가장 가까운 노트 찾기
+                        RhythmNote targetNote = findClosestNote(currentMusicTimeMs, KeyEvent.VK_F);
+                        HitResult result = new HitResult(
+                                targetNote.image,
+                                targetNote.finalDrawX,
+                                targetNote.finalDrawY
+                        );
+                        // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
+                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        else drawnBigCreams.add(result);
+
+                        // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
+                        beatMap.remove(targetNote);
+
+                        repaint(); // 화면 갱신
+                    }
+
+                }
+
+                // 키 이벤트 처리 후, 화면을 갱신해야 할 경우 호출
+                // repaint();
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                // 키에서 손을 뗄 때 처리 (예: 움직임을 멈추거나 애니메이션 종료)
+                keyPressed = false;
+            }
+        });
+    }
+
+    protected void processSpaceKeyPressLogic() {
+        // 1. 판정 로직 수행
+        if (judgementManager != null) {
+
+            // ‼️ 오프셋 적용된 음악 시간 계산: 입력 시간을 47ms 앞으로 당겨서 보정
+            int adjustedMusicTime = currentMusicTimeMs + JUDGEMENT_OFFSET_MS;
+
+            // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
+            System.out.println("--------------------------------------------------");
+            System.out.println("[INPUT] Space Bar Pressed!");
+            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
+            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
+            System.out.println("--------------------------------------------------");
+
+            // ‼️ 조정된 시간을 판정 함수에 전달
+            judgementManager.handleInput(adjustedMusicTime);
+
+            // 💡 [핵심 추가] judgementManager의 현재 점수를 StageManager에 저장
+            int currentTotalScore = judgementManager.getScore();
+            CakeStageManager.setCumulativeScore(currentTotalScore);
+
+            lastJudgementResult = judgementManager.getLastJudgement();
+            judgementDisplayStartTime = currentMusicTimeMs;
+        }
+
+    }
+
+    private RhythmNote findClosestNote(long currentTime, int requiredKey) {
+        for (RhythmNote note : beatMap) {
+            if (note.requiredKey == requiredKey && (note.targetTime - currentTime) <= SUCCESS_WINDOW) {
+                return note;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -101,9 +301,13 @@ public class CakeStage3_1 extends CakeAnimation {
         creamPiping1 = loadImage("../images/cakeStage_image/stage3/Cat01_stage3-1.png");
         creamPiping2 = loadImage("../images/cakeStage_image/stage3/Cat02_stage3-1.png");
 
+        creamRePiping1 = loadImage("../images/cakeStage_image/stage3/reverseCat01_stage3-1.png");
+        creamRePiping2 = loadImage("../images/cakeStage_image/stage3/reverseCat02_stage3-1.png");
+
         decoCream = loadImage("../images/cakeStage_image/stage3/Cream_stage3-1.png");
 
         creamCat = loadImage("../images/cakeStage_image/stage3/creamCat.png");
+        creamCat2 = loadImage("../images/cakeStage_image/stage3/creamCat2.png");
         cakeCream = new Image[3];
         for (int i = 0; i < 3; i++) {
             cakeCream[i] = new ImageIcon(Main.class.getResource("../images/cakeStage_image/stage3/cakeCream0" + (i + 1) + ".png")).getImage();
@@ -195,6 +399,34 @@ public class CakeStage3_1 extends CakeAnimation {
                 }
             }
         }
+        if(keyPressed) {
+            currentPipingImage = creamRePiping2;
+            currentCatImage = creamCat2;
+        } else {
+            currentPipingImage = creamRePiping1;
+            currentCatImage = creamCat;
+        }
+
+        if (currentTime > GUIDE_END && currentTime <= 94400) {
+            for (HitResult result : drawnCreams) {
+                if (result.image != null) {
+                    // result 객체에 저장된 finalDrawX, finalDrawY 위치에 그립니다.
+                    g2.drawImage(result.image, result.x, result.y, this);
+                }
+            }
+            g2.drawImage(currentPipingImage, 600, 270, 495, 405, null);
+        }//550 450
+
+        if (currentTime > 94400 && currentTime <= END_TIME) {
+            for (HitResult result : drawnBigCreams) {
+                if (result.image != null) {
+                    // result 객체에 저장된 finalDrawX, finalDrawY 위치에 그립니다.
+                    g2.drawImage(result.image, result.x, result.y, this);
+                }
+            }
+            g2.drawImage(currentCatImage, 650, 250, 600, 600, null);
+        }
+
 
 
         // 키 입력 시 실행할 스테이지 고유의 추가 로직 제거
