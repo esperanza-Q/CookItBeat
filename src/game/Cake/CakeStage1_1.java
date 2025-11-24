@@ -330,6 +330,9 @@ public class CakeStage1_1 extends CakeAnimation {
             // 2. 판정 결과 문자열 획득
             String judgementResultString = judgementManager.getLastJudgement();
 
+            // ✅ 카운트/판정UI 등록 통일
+            registerJudgement(judgementResultString);
+
             // ‼️ [추가] 판정 결과를 상위 클래스 필드에 저장 및 표시 시간 업데이트
             lastJudgementResult = judgementResultString;
             judgementDisplayStartTime = currentMusicTimeMs;

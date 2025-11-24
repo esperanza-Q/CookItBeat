@@ -1,20 +1,28 @@
 package game.Space;
 
+import game.GameFrame;
+
 import javax.swing.*;
 import java.awt.*;
+import game.Music;
 
 public class SpacePanel extends JPanel {
 
     private CardLayout cardLayout = new CardLayout();
     private SpaceAnimation currentStage; // 현재 스테이지 인스턴스 참조용
 
+    private final GameFrame gameFrame;
 
     private SpaceStage1 stage1;   // ← 추가
     private SpaceStage2 stage2;   // ← 추가
     private SpaceStage3 stage3;   // ← 추가
     private ResultPanel resultPanel; // ✅ 추가
 
-    public SpacePanel() {
+    private Music resultMusic;
+    private boolean musicPlayed = false;
+
+    public SpacePanel(GameFrame frame) {
+        this.gameFrame = frame;
         setLayout(cardLayout);
 
         // 화면 1 : Stage 1
@@ -46,7 +54,7 @@ public class SpacePanel extends JPanel {
         stage3 = new SpaceStage3();
         stage3.setLayout(null); // Layout Manager 설정 (필요하다면)
 
-        resultPanel = new ResultPanel(); // 결과 추가
+        resultPanel = new ResultPanel(this); // 결과 추가
 
         add(stage1, "Stage1"); // 이름 변경
         add(stage2, "Stage2"); // 이름 변경
@@ -66,6 +74,19 @@ public class SpacePanel extends JPanel {
 
         // 🔥 처음 실행될 때 포커스 주기
         SwingUtilities.invokeLater(() -> stage1.requestFocusInWindow());
+    }
+
+
+    public void goToLobby() {
+        // ✅ StageManager.stopMusic() 대신 직접 끄기
+        if (StageManager.spaceBackgroundMusic != null) {
+            StageManager.spaceBackgroundMusic.close();
+            StageManager.spaceBackgroundMusic = null;
+        }
+
+        if (gameFrame != null) {
+            gameFrame.showLobbyScreen(gameFrame.getCurrentUser());
+        }
     }
 
     // ✅ SpaceAnimation에서 호출할 다음 스테이지 전환 메서드

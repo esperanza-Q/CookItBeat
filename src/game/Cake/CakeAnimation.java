@@ -134,6 +134,21 @@ public abstract class CakeAnimation extends JPanel {
 
     public void updateStageLogic() {}
 
+    // ✅ 판정 발생 시 이걸로만 기록하도록 통일
+    protected void registerJudgement(String judgement) {
+        lastJudgementResult = judgement;
+        judgementDisplayStartTime = currentMusicTimeMs;
+
+        if ("PERFECT!".equals(judgement)) {
+            CakeStageManager.addPerfect();
+        } else if ("GREAT!".equals(judgement) || "GOOD".equals(judgement)) {
+            CakeStageManager.addGood();
+        } else if ("MISS".equals(judgement)) {
+            CakeStageManager.addMiss();
+        }
+    }
+
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -156,6 +171,14 @@ public abstract class CakeAnimation extends JPanel {
     }
 
     private void drawUI(Graphics2D g2) {
+        CakeStageData data = CakeStageManager.getCurrentStageData();
+
+        if (data == null) {
+            // 아직 세팅 전이면 UI를 그리지 않고 빠짐
+            return;
+        }
+        String musicName = data.getMusicFileName();
+
         // 1. 시간 바 (토끼 진행 바)
         if (rabbitBar != null && rabbitIcon != null) {
             g2.drawImage(rabbitBar, BAR_X, BAR_Y, BAR_WIDTH, 50, null);

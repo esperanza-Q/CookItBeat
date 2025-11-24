@@ -11,9 +11,12 @@ import java.io.InputStream;
 
 public class ResultPanel extends JPanel {
 
+    private final SpacePanel controller;   // ✅ 컨트롤러 참조 추가
+    private JButton lobbyButton;           // ✅ 로비 버튼
+
     private Image background;
 
-    private Image resultImage;   // ✅ 왼쪽 Reaction 영역에 크게 띄울 이미지
+    private Image resultImage;
     private String resultText = "";
     private int finalScore;
 
@@ -24,14 +27,37 @@ public class ResultPanel extends JPanel {
     private Music resultMusic;
     private boolean musicPlayed = false;
 
-    public ResultPanel() {
+    // ✅ controller 받는 생성자로 변경
+    public ResultPanel(SpacePanel controller) {
+        this.controller = controller;
         setFocusable(true);
+        setLayout(null);
+
+        // ✅ 로비 버튼 생성
+        lobbyButton = new JButton("로비로 돌아가기");
+        lobbyButton.setFocusPainted(false);
+        lobbyButton.setBounds(880, 630, 300, 60); // 원하는 위치면 여기만 바꾸면 됨
+
+        lobbyButton.addActionListener(e -> {
+            // 결과 음악 끄기
+            if (resultMusic != null) {
+                resultMusic.close();
+                resultMusic = null;
+            }
+
+            // ✅ 로비로 이동
+            if (controller != null) {
+                controller.goToLobby();
+            }
+        });
+
+        add(lobbyButton);
 
         background = new ImageIcon(Main.class.getResource(
                 "../images/alienStage_image/result_background.png"
         )).getImage();
 
-        // ✅ 한국어 폰트 로드 (절대경로)
+        // ✅ 폰트 로드
         try {
             File fontFile = new File("C:\\HYKY\\CookItBeat\\src\\fonts\\LAB디지털.ttf");
             InputStream is = new FileInputStream(fontFile);
@@ -39,7 +65,6 @@ public class ResultPanel extends JPanel {
             Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);
             is.close();
 
-            // 원하는 크기로 파생
             scoreFont  = baseFont.deriveFont(Font.BOLD, 32f);
             detailFont = baseFont.deriveFont(Font.BOLD, 26f);
             rankFont   = baseFont.deriveFont(Font.BOLD, 40f);
@@ -82,11 +107,9 @@ public class ResultPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-
         int w = getWidth();
         int h = getHeight();
 
-        // 배경
         if (background != null) {
             g.drawImage(background, 0, 0, w, h, this);
         }
@@ -94,7 +117,6 @@ public class ResultPanel extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // ✅ 안전 UI 영역(1120x660) 비율
         int safeW = (int)(w * 0.875);
         int safeH = (int)(h * 0.917);
         int safeX = (w - safeW) / 2;
@@ -102,7 +124,6 @@ public class ResultPanel extends JPanel {
 
         int pad = (int)(safeW * 0.04);
 
-        // ✅ 박스 레이아웃
         int leftBoxW = (int)(safeW * 0.55);
         int leftBoxH = (int)(safeH * 0.48);
         int leftBoxX = safeX + pad;
@@ -118,15 +139,11 @@ public class ResultPanel extends JPanel {
         int bottomBoxX = rightBoxX;
         int bottomBoxY = rightBoxY + rightBoxH + (int)(safeH * 0.04);
 
-        // ✅ 박스 배경 (반투명 검정)
         g2.setColor(new Color(0, 0, 0, 120));
         g2.fillRoundRect(leftBoxX, leftBoxY, leftBoxW, leftBoxH, 20, 20);
         g2.fillRoundRect(rightBoxX, rightBoxY, rightBoxW, rightBoxH, 20, 20);
         g2.fillRoundRect(bottomBoxX, bottomBoxY, bottomBoxW, bottomBoxH, 20, 20);
 
-        // ------------------------------------------------
-        // 1) 왼쪽 Reaction 영역: 결과 이미지 크게 표시
-        // ------------------------------------------------
         if (resultImage != null) {
             g2.drawImage(resultImage, leftBoxX, leftBoxY, leftBoxW, leftBoxH, this);
         } else {
@@ -136,9 +153,6 @@ public class ResultPanel extends JPanel {
                     new Rectangle(leftBoxX, leftBoxY, leftBoxW, leftBoxH));
         }
 
-        // ------------------------------------------------
-        // 2) 오른쪽 위: 점수 합산 상세 (일단 0 유지)
-        // ------------------------------------------------
         g2.setColor(Color.WHITE);
         g2.setFont(detailFont);
 
@@ -157,9 +171,6 @@ public class ResultPanel extends JPanel {
         g2.drawString("Good    : " + goodCount, textX, textY); textY += lineGap;
         g2.drawString("Miss    : " + missCount, textX, textY);
 
-        // ------------------------------------------------
-        // 3) 오른쪽 아래: 최종 등급 + 점수
-        // ------------------------------------------------
         g2.setFont(scoreFont);
 
         String rankLine = "최종 등급 : " + resultText;
@@ -181,17 +192,14 @@ public class ResultPanel extends JPanel {
     }
 
     private void playResultMusic() {
-        if (musicPlayed) return;  // 이미 재생했다면 무시
+        if (musicPlayed) return;
         musicPlayed = true;
 
-        // 🔥 기존 스테이지 음악 종료
         if (StageManager.spaceBackgroundMusic != null) {
             StageManager.spaceBackgroundMusic.close();
         }
 
-        // 🔥 결과 화면 전용 음악 실행
         resultMusic = new Music("result_alien.mp3", false);
         resultMusic.start();
     }
-
 }
