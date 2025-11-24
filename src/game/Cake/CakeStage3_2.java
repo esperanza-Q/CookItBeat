@@ -17,13 +17,12 @@ public class CakeStage3_2 extends CakeAnimation {
 
     private CakePanel controller;
     protected RhythmJudgementManager judgementManager;
-    private static final int JUDGEMENT_OFFSET_MS = -180;
+    private static final int JUDGEMENT_OFFSET_MS = -100;
 
-    private Image clickImage;
     private Image cardImage = guideCardImage1;
 
     // 성공적으로 클릭된 모든 좌표를 저장할 리스트
-    private List<Point> successfulClicks = new ArrayList<>();
+    private List<DecoratedClick> successfulClicks = new ArrayList<>();
 
     private static final int[] GUIDE_TIMES_INT = {
             96140, 96340, 96575, 96997, 97201, 97428, // 크림 가이드
@@ -132,19 +131,38 @@ public class CakeStage3_2 extends CakeAnimation {
             public void mouseClicked(MouseEvent e) {
                 int clickX = e.getX();
                 int clickY = e.getY();
+                Image currentDecoImage = null; // 이 클릭 시점에 사용할 이미지
+                int width, height;
 
                 // 충돌 판정 루프
                 if (cakeBound.contains(clickX, clickY)) {
                     //Music.playEffect("laser02.mp3");
                     processSpaceKeyPressLogic(); // 판정 로직
                     if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
+
                         if (currentMusicTimeMs >= CREAM_GUIDE_END && currentMusicTimeMs < STRAWBERRY_GUIDE_START) {
-                            clickImage = decoCream; // (미리 로드된 이미지 객체)//
+                            currentDecoImage = decoCream;
+                            width = 210; // 150 * 1.3
+                            height = 293;
                         } else if (currentMusicTimeMs >= STRAWBERRY_GUIDE_END && currentMusicTimeMs <= STRAWBERRY_END_TIME) {
-                            clickImage = decoStrawberry;
+                            currentDecoImage = decoStrawberry;
+                            width = 320; // 230 * 1.3
+                            height = 273; // 210
+                        } else {
+                            return; // 해당 타이밍에 유효한 이미지가 없으면 추가하지 않음
                         }
 
-                        successfulClicks.add(new Point(clickX, clickY));
+                        // 2. 새로운 DecoratedClick 객체를 생성하여 리스트에 추가
+                        if (currentDecoImage != null) {
+                            DecoratedClick newClick = new DecoratedClick(
+                                    clickX,
+                                    clickY,
+                                    currentDecoImage,
+                                    width,
+                                    height
+                            );
+                            successfulClicks.add(newClick);
+                        }
                     }
 
                 }
@@ -340,22 +358,18 @@ public class CakeStage3_2 extends CakeAnimation {
             int drawX = 0;
             int drawY = 0;
 
-            if (clickImage != null) {
-                for (Point p : successfulClicks) {
+            if (!successfulClicks.isEmpty()) { // 리스트가 비어있지 않으면
+                for (DecoratedClick dc : successfulClicks) {
+                    int x = dc.x;
+                    int y = dc.y;
+                    int width = dc.width;
+                    int height = dc.height;
+                    Image image = dc.image;
 
-                    int x = p.x;
-                    int y = p.y;
-                    int width, height;
-                    if (clickImage == decoCream) {
-                        width = 210; //150 * 1.3
-                        height = 293;
-                    } else {
-                        width = 320; //230 * 1.3
-                        height = 273; //210
+                    if (image != null) {
+                        // 이미지를 중앙에 정렬하여 그리기
+                        g2.drawImage(image, x - width / 2, y - height / 2, width, height, null);
                     }
-                    // 이미지를 중앙에 정렬하여 그리기 (이미지 크기가 30x30이라고 가정)
-                    // 클릭 지점(x, y)을 이미지의 중심에 오도록 조정합니다.
-                    g2.drawImage(clickImage, x - width / 2, y - height / 2, width, height, null);
                 }
             }
 
@@ -427,7 +441,24 @@ public class CakeStage3_2 extends CakeAnimation {
         }
     }
 
+    public class DecoratedClick {
+        public int x;
+        public int y;
+        public Image image;
+        public int width;  // 이미지 크기를 객체 내부에 저장하여 그리기 로직 단순화
+        public int height; // 이미지 크기를 객체 내부에 저장하여 그리기 로직 단순화
+
+        public DecoratedClick(int x, int y, Image img, int w, int h) {
+            this.x = x;
+            this.y = y;
+            this.image = img;
+            this.width = w;
+            this.height = h;
+        }
+    }
     // 키 입력 시 실행할 스테이지 고유의 추가 로직 제거
     // @Override
     // protected void processKeyInput(int keyCode) { ... }
+
 }
+

@@ -16,7 +16,7 @@ public class CakeStage3_1 extends CakeAnimation {
 
     private CakePanel controller;
     protected RhythmJudgementManager judgementManager;
-    private static final int JUDGEMENT_OFFSET_MS = -180;
+    private static final int JUDGEMENT_OFFSET_MS = -80;
 
     private Image cardImage = guideCardImage1;
     private Image currentPipingImage = creamRePiping1;
