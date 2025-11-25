@@ -9,22 +9,30 @@ import java.awt.*;
 public class SignupPanel extends JPanel {
     private GameFrame gameFrame;
     private JTextField usernameField;
+    private Image background;
 
     public SignupPanel(GameFrame frame) {
         this.gameFrame = frame;
+        background = new ImageIcon(Main.class.getResource("../images/mainUI/background_paper.png")).getImage();
 
         // ✅ 로비 BGM 유지
         LobbyBgmManager.start();
 
         setLayout(new GridBagLayout());
-        setBackground(new Color(240, 240, 250));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
 
-        // 타이틀
-        JLabel titleLabel = new JLabel("회원가입");
-        titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 32));
+        // 타이틀 (이미지로 대체)
+        ImageIcon titleIcon = new ImageIcon(Main.class.getResource("../images/mainUI/Signup_txt.png"));
+        JLabel titleLabel;
+        if (titleIcon != null) {
+            titleLabel = new JLabel(titleIcon);
+        } else {
+            // 이미지를 찾지 못하면 기존 텍스트로 대체
+            titleLabel = new JLabel("회원가입");
+            titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 32));
+        }
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -32,59 +40,37 @@ public class SignupPanel extends JPanel {
         gbc.insets = new Insets(20, 10, 40, 10);
         add(titleLabel, gbc);
 
-        // 아이디 라벨
+        // 아이디 라벨 (이미지로 대체)
+        ImageIcon userIcon = new ImageIcon(Main.class.getResource("../images/mainUI/id_txt.png"));
+        JLabel userLabel;
+
         gbc.gridwidth = 1;
         gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.insets = new Insets(10, 10, 10, 10);
-        JLabel userLabel = new JLabel("아이디:");
-        userLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+
+        if (userIcon != null) {
+            userLabel = new JLabel(userIcon);
+        } else {
+            userLabel = new JLabel("아이디:");
+            userLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+        }
         add(userLabel, gbc);
 
         // 아이디 입력
         gbc.gridx = 1;
         gbc.anchor = GridBagConstraints.WEST;
         usernameField = new JTextField(20);
-        usernameField.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+        usernameField.setFont(new Font("맑은 고딕", Font.PLAIN, 20));
         add(usernameField, gbc);
-/*
-        // 비밀번호 라벨
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.EAST;
-        JLabel passLabel = new JLabel("비밀번호:");
-        passLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
-        add(passLabel, gbc);
 
-        // 비밀번호 입력
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.WEST;
-        passwordField = new JPasswordField(20);
-        passwordField.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
-        add(passwordField, gbc);
-
-        // 비밀번호 확인 라벨
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.anchor = GridBagConstraints.EAST;
-        JLabel confirmLabel = new JLabel("비밀번호 확인:");
-        confirmLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
-        add(confirmLabel, gbc);
-
-        // 비밀번호 확인 입력
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.WEST;
-        confirmPasswordField = new JPasswordField(20);
-        confirmPasswordField.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
-        add(confirmPasswordField, gbc);
-*/
         // 안내 문구
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         JLabel infoLabel = new JLabel("* 아이디: 4-20자 영문, 숫자");
-        infoLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
+        infoLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 20));
         infoLabel.setForeground(Color.GRAY);
         add(infoLabel, gbc);
 
@@ -92,14 +78,50 @@ public class SignupPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setOpaque(false);
 
-        JButton signupButton = new JButton("가입하기");
-        signupButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        signupButton.setPreferredSize(new Dimension(100, 40));
+// ----------------- 가입하기 버튼 -----------------
+        ImageIcon signup_off = new ImageIcon(Main.class.getResource("../images/mainUI/Buttons/Signup_txt_unselected.png"));
+        ImageIcon signup_on = new ImageIcon(Main.class.getResource("../images/mainUI/Buttons/Signup_txt_selected.png"));
+
+        JButton signupButton = new JButton();
+        if (signup_off != null) {
+            signupButton.setIcon(signup_off);
+            if (signup_on != null) {
+                signupButton.setRolloverIcon(signup_on); // 롤오버 아이콘 설정
+            }
+            // 이미지를 사용하므로 텍스트, 경계, 배경을 숨김
+            signupButton.setBorderPainted(false);
+            signupButton.setContentAreaFilled(false);
+            signupButton.setFocusPainted(false);
+            // 버튼 크기는 아이콘 크기에 맞춰지므로 setPreferredSize는 필요 없습니다.
+        } else {
+            // 이미지 로드 실패 시 대체
+            signupButton.setText("가입하기");
+            signupButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
+            signupButton.setPreferredSize(new Dimension(100, 40));
+        }
         signupButton.addActionListener(e -> signup());
 
-        JButton backButton = new JButton("뒤로가기");
-        backButton.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
-        backButton.setPreferredSize(new Dimension(100, 40));
+
+// ----------------- 뒤로가기 버튼 -----------------
+        ImageIcon back_off = new ImageIcon(Main.class.getResource("../images/mainUI/Buttons/Signup_back_unselected.png"));
+        ImageIcon back_on = new ImageIcon(Main.class.getResource("../images/mainUI/Buttons/Signup_back_selected.png"));
+
+        JButton backButton = new JButton();
+        if (back_off != null) {
+            backButton.setIcon(back_off);
+            if (back_on != null) {
+                backButton.setRolloverIcon(back_on); // 롤오버 아이콘 설정
+            }
+            // 이미지를 사용하므로 텍스트, 경계, 배경을 숨김
+            backButton.setBorderPainted(false);
+            backButton.setContentAreaFilled(false);
+            backButton.setFocusPainted(false);
+        } else {
+            // 이미지 로드 실패 시 대체
+            backButton.setText("뒤로가기");
+            backButton.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+            backButton.setPreferredSize(new Dimension(100, 40));
+        }
         backButton.addActionListener(e -> gameFrame.showHomeScreen());
 
         buttonPanel.add(signupButton);
@@ -137,28 +159,6 @@ public class SignupPanel extends JPanel {
             usernameField.requestFocus();
             return;
         }
-/*
-        // 3. 비밀번호 길이 체크
-        if (password.length() < 6) {
-            JOptionPane.showMessageDialog(this,
-                    "비밀번호는 6자 이상이어야 합니다!",
-                    "비밀번호 오류",
-                    JOptionPane.WARNING_MESSAGE);
-            passwordField.requestFocus();
-            return;
-        }
-
-        // 4. 비밀번호 일치 확인
-        if (!password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this,
-                    "비밀번호가 일치하지 않습니다!",
-                    "비밀번호 오류",
-                    JOptionPane.WARNING_MESSAGE);
-            confirmPasswordField.setText("");
-            confirmPasswordField.requestFocus();
-            return;
-        }
-*/
 
         // 5. 데이터베이스에 회원가입
         boolean success = DBConnection.registerUser(username);
@@ -177,7 +177,8 @@ public class SignupPanel extends JPanel {
             usernameField.setText("");
             usernameField.requestFocus();
         }
-
-
+    }
+    public void paintComponent(Graphics g) {
+        g.drawImage(background, 0, 0, null);
     }
 }
