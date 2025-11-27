@@ -4,7 +4,6 @@ package game;
 import javax.swing.*;
 import java.awt.*;
 
-
 public class HomePanel extends JPanel {
     private GameFrame gameFrame;
     //private CardLayout cardLayout = new CardLayout();

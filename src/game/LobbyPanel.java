@@ -49,8 +49,8 @@ public class LobbyPanel extends JPanel {
         add(alienButton);
         // 💡 외계인 버튼 클릭 이벤트 리스너 추가
         alienButton.addActionListener(e -> {
-            // 버튼 클릭 시 수행할 동작: 외계인 스테이지 패널을 실행
-            gameFrame.showSpaceScreen();
+            // 버튼 클릭 시 수행할 동작: 외계인 스테이지 인트로 패널을 실행
+            gameFrame.showSpaceIntroScreen();
         });
 
         // 💡 케이크 텍스트를 위한 JLabel
