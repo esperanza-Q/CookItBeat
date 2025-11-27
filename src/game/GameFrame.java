@@ -83,6 +83,13 @@ public class GameFrame extends JFrame {
         repaint();
     }
 
+    public void showSpaceIntroScreen() {
+        LobbyBgmManager.stop();
+        getContentPane().removeAll();
+        getContentPane().add(new SpaceIntroPanel(this));  // ✅ frame 넘겨주기
+        revalidate();
+        repaint();
+    }
 
     public void showCakeScreen() {
         LobbyBgmManager.stop();
@@ -92,8 +99,15 @@ public class GameFrame extends JFrame {
         repaint(); // 화면 다시 그리기
     }
 
+    public void showCakeIntroScreen() {
+        LobbyBgmManager.stop();
+        getContentPane().removeAll(); // 기존 화면 제거
+        //getContentPane().add(new CakeIntroPanel(this));
+        revalidate(); // 레이아웃 다시 계산
+        repaint(); // 화면 다시 그리기
+    }
+
     public String getCurrentUser() {
         return currentUser;
     }
-
 }
