@@ -34,9 +34,25 @@ public class CakeResultPanel extends JPanel {
         setLayout(null);
 
         // ✅ 버튼 먼저 생성
-        lobbyButton = new JButton("로비로 돌아가기");
+        ImageIcon tolobby1 = new ImageIcon(getClass().getResource("../../images/mainUI/Buttons/tolobbyButton_unselected.png"));
+        ImageIcon tolobby2 = new ImageIcon(getClass().getResource("../../images/mainUI/Buttons/tolobbyButton_selected.png"));
+        lobbyButton = new JButton();    // ✅ 로비 버튼 생성
+        // 1. 버튼에서 기본 텍스트 제거
+        lobbyButton.setText(null);
+
+        // 2. 버튼의 기본 아이콘 설정 (unselected)
+        lobbyButton.setIcon(tolobby1);
+
+        // 3. 마우스가 올라갔을 때(rollover) 아이콘 설정 (selected)
+        lobbyButton.setRolloverIcon(tolobby2);
+
+        // 4. 버튼 배경과 테두리를 투명하게 설정하여 이미지 자체만 보이도록 합니다.
+        lobbyButton.setBorderPainted(false);      // 테두리 제거
+        lobbyButton.setContentAreaFilled(false);  // 내용 영역 채우기 제거 (배경 투명화)
+        // ------------------ 👆 [수정/추가됨] 이미지 및 스타일 설정 👆 ------------------
+
         lobbyButton.setFocusPainted(false);
-        lobbyButton.setBounds(880, 630, 300, 60); // 원하는 위치면 여기만 바꾸면 됨
+        lobbyButton.setBounds(880, 600, 300, 60); // 원하는 위치면 여기만 바꾸면 됨
 
         lobbyButton.addActionListener(e -> {
             // 결과 음악 끄기
