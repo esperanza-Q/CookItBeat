@@ -14,6 +14,8 @@ public class LobbyPanel extends JPanel {
     // 💡 버튼과 텍스트의 영역을 정의
     private final Rectangle ALIEN_BUTTON_BOUNDS = new Rectangle(30, 0, 590, 580);
     private final Rectangle CAKE_BUTTON_BOUNDS = new Rectangle(700, 200, 500, 450);
+    // 💡 뒤로가기 버튼 영역 추가 (오른쪽 상단)
+    private final Rectangle BACK_BUTTON_BOUNDS = new Rectangle(950, 10, 300, 100);
 
     public LobbyPanel(GameFrame frame, String username) {
         this.gameFrame = frame;
@@ -32,6 +34,8 @@ public class LobbyPanel extends JPanel {
         ImageIcon alien2 = new ImageIcon(getClass().getResource("../images/mainUI/alienStage_selected.png"));
         ImageIcon cake1 = new ImageIcon(getClass().getResource("../images/mainUI/cakeStage_unselected.png"));
         ImageIcon cake2 = new ImageIcon(getClass().getResource("../images/mainUI/cakeStage_selected.png"));
+        ImageIcon back1 = new ImageIcon(getClass().getResource("../images/mainUI/Buttons/Signup_back_unselected.png"));
+        ImageIcon back2 = new ImageIcon(getClass().getResource("../images/mainUI/Buttons/Signup_back_selected.png"));
 
         // 💡 외계인 텍스트를 위한 JLabel (버튼 위에 겹쳐서 표시)
         JLabel alienTextLabel = createTextLabel(alienTxt, ALIEN_BUTTON_BOUNDS);
@@ -45,8 +49,8 @@ public class LobbyPanel extends JPanel {
         add(alienButton);
         // 💡 외계인 버튼 클릭 이벤트 리스너 추가
         alienButton.addActionListener(e -> {
-            // 버튼 클릭 시 수행할 동작: 외계인 스테이지 패널을 실행
-            gameFrame.showSpaceScreen();
+            // 버튼 클릭 시 수행할 동작: 외계인 스테이지 인트로 패널을 실행
+            gameFrame.showSpaceIntroScreen();
         });
 
         // 💡 케이크 텍스트를 위한 JLabel
@@ -62,6 +66,16 @@ public class LobbyPanel extends JPanel {
         cakeButton.addActionListener(e -> {
             // 버튼 클릭 시 수행할 동작: 케이크 스테이지 패널을 실행
             gameFrame.showCakeScreen();
+        });
+    // --- 뒤로가기 버튼 ---
+        JButton backButton = createStageButton(back1, back2);
+        backButton.setBounds(BACK_BUTTON_BOUNDS); // 💡 오른쪽 상단 위치와 크기 설정
+        add(backButton);
+
+        // 💡 뒤로가기 버튼 클릭 이벤트 리스너 추가: 홈 화면으로 이동
+        backButton.addActionListener(e -> {
+            // 버튼 클릭 시 수행할 동작: 홈 화면으로 이동
+            gameFrame.showHomeScreen();
         });
 
     }
