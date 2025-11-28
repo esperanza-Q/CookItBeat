@@ -27,7 +27,8 @@ public class SpaceIntroPanel extends JPanel {
     private String[] dialogues = {
             """
 후루룩 깐따삐야 (수석 연구원):
-삐리삐리... 생체 신호 분석. 털 색이 하얀 걸 보니 '우주적 공복' 상태로군, 지구 고양이!
+삐리삐리... 생체 신호 분석. 털 색이 하얀 걸 보니 
+'우주적 공복' 상태로군, 지구 고양이!
 나는 라면 행성 라메니아의 지성, [우주 라면 실험실]의 소장 
 '후루룩 깐따삐야'다!
 """,
@@ -50,7 +51,8 @@ public class SpaceIntroPanel extends JPanel {
             // 2단계
             """
 후루룩 깐따삐야 (수석 연구원):
-2단계, 고밀도 탄수화물 확보! 저기 '블랙홀'의 사건 지평선에서 쫄깃한 면발 데이터를 수집해야 한다.
+2단계, 고밀도 탄수화물 확보! 저기 '블랙홀'의 사건 지평선에서 
+쫄깃한 면발 데이터를 수집해야 한다.
 공기포 가동! 면발이 날아오는 리듬을 분석하고 키를 눌러라!
 왼쪽은 [A], 오른쪽은 [D], 양방향 간섭은 [W]다! 
 쫄깃한 텐션을 유지해!
@@ -58,7 +60,7 @@ public class SpaceIntroPanel extends JPanel {
 
             // 3단계
             """
-후루룩 깐따삐야 (수석 연구원):
+후루룩 깐따삐야  (수석 연구원):
 3단계, 맛의 화룡점정! 우주를 떠도는 문명의 잔해를 
 '풍미 촉매제'로 변환한다!
 버섯, 대파, 계란... 반응 물질이 보이면 박자에 맞춰 [마우스 클릭]으로 레이저를 쏴서 포획해라!
@@ -67,7 +69,7 @@ public class SpaceIntroPanel extends JPanel {
 
             // 마무리
             """
-후루룩 깐따삐야 (수석 연구원):
+후루룩 깐따삐야  (수석 연구원):
 백문이 불여일식! 이론 수업은 끝났다. 
 내 완벽한 시범 시뮬레이션을 가동할 테니,데이터를 눈에 
 새기고 그대로 복제해라!
@@ -139,11 +141,11 @@ public class SpaceIntroPanel extends JPanel {
                 throw new IOException("Font resource not found: /fonts/LAB디지털.ttf");
             }
             Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);
-            dialogue = baseFont.deriveFont(Font.BOLD, 25f);
+            dialogue = baseFont.deriveFont(Font.BOLD, 22f);
             is.close();
         } catch (FontFormatException | IOException e) {
             System.err.println("폰트 로딩 실패. 기본 폰트 사용: " + e.getMessage());
-            dialogue = new Font("Dialog", Font.BOLD, 25);
+            dialogue = new Font("Dialog", Font.BOLD, 22);
         }
 
         // ✅ 배경 BGM 시작 (loop)
@@ -385,7 +387,7 @@ public class SpaceIntroPanel extends JPanel {
 
                 // 폰트 (화자 줄은 살짝 더 굵게/크게 주고 싶으면 여기서 조절)
                 if (isSpeakerLine) {
-                    g.setFont(dialogue.deriveFont(Font.BOLD, 26f));
+                    g.setFont(dialogue.deriveFont(Font.BOLD, 25f));
                 } else {
                     g.setFont(dialogue);
                 }
