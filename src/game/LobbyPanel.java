@@ -26,7 +26,7 @@ public class LobbyPanel extends JPanel {
 
         LobbyBgmManager.start();
 
-        background = new ImageIcon(Main.class.getResource("../images/cakeStage_image/stage1/Background_stage1-1.png")).getImage();
+        background = new ImageIcon(Main.class.getResource("../images/mainUI/lobby_background2.png")).getImage();
         alienTxt = new ImageIcon(Main.class.getResource("../images/mainUI/alienStage_txt.png")).getImage();
         cakeTxt = new ImageIcon(Main.class.getResource("../images/mainUI/cakeStage_txt.png")).getImage();
 
@@ -65,7 +65,7 @@ public class LobbyPanel extends JPanel {
         // 💡 케이크 버튼 클릭 이벤트 리스너 추가
         cakeButton.addActionListener(e -> {
             // 버튼 클릭 시 수행할 동작: 케이크 스테이지 패널을 실행
-            gameFrame.showCakeScreen();
+            gameFrame.showCakeIntroScreen();
         });
     // --- 뒤로가기 버튼 ---
         JButton backButton = createStageButton(back1, back2);
