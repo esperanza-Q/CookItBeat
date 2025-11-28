@@ -60,7 +60,9 @@ public class SpaceStage3 extends SpaceAnimation {
     // ✅ [추가] 외계인 손 현재 이미지
     private Image currentAlien;
 
-    private static int offset = 1000;
+    private static int offset = 500;
+
+    private static int click = 0;
 
     // ✅ [추가] 레이저 애니메이션 관련 변수
     public static Image currentLaserImage = null;
@@ -139,15 +141,30 @@ public class SpaceStage3 extends SpaceAnimation {
     private final int[] ALIEN_RELEASE_TIMES;
 
     // ✅ [추가] 수프 멈춤/재개 타이밍 상수
-    private final int SOUP_STOP_TIME = toJudgeMs(72500);   // 72.5초에 정지 조건 활성화
-    private final int SOUP_RESUME_TIME = toJudgeMs(75500); // 75.5초에 재개
+    private final int SOUP_STOP_TIME = USER_PRESS_TIMES_INT[8] + offset - 250;   // 72.5초에 정지 조건 활성화
+    private final int SOUP_RESUME_TIME = USER_PRESS_TIMES_INT[8] + offset - 250 + 3000; // 75.5초에 재개
 
     // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
     private static long[] convertToLongArray(int[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < array.length; i++) {
-            result[i] = array[i]+ offset;
+            result[i] = array[i] + offset;
         }
+
+        result[0] = result[0] + 450 - 100;
+        result[1] = result[1] + 450 - 100;
+        result[2] = result[2] + 450 - 100;
+
+        result[3] = result[3] - 400;
+        result[4] = result[4] - 400;
+        result[5] = result[5] - 400;
+        result[6] = result[6] - 50 - 400;
+        result[7] = result[7] - 50 - 400;
+        for (int i = 8; i < 20; i++) {
+            result[i] = result[i] - 180;
+        }
+        result[20] = result[20] - 477;
+
         return result;
     }
 
@@ -155,6 +172,12 @@ public class SpaceStage3 extends SpaceAnimation {
         // 1. super() 호출을 첫 줄로 배치하고, static 헬퍼 메서드를 통해 인자를 준비합니다.
         // ‼️ 판정 타이밍 배열(USER_PRESS_TIMES_INT)을 부모 클래스에 전달합니다.
         super(convertToLongArray(USER_PRESS_TIMES_INT));
+
+        // ‼️ [추가] 마우스 이벤트 수신을 위해 포커스 가능 설정
+        this.setFocusable(true);
+        this.requestFocusInWindow(); // 윈도우 포커스 요청
+
+        GLOBAL_JUDGEMENT_OFFSET_MS = 0;
 
         // 2. 인스턴스 변수인 ALIEN_RELEASE_TIMES 초기화 (super() 호출 후 가능)
         ALIEN_RELEASE_TIMES = new int[ALIEN_PRESS_TIMES_INT.length];
@@ -181,30 +204,110 @@ public class SpaceStage3 extends SpaceAnimation {
         // ‼️ 외계인 손은 초기엔 alien1 또는 null로 설정 (화면에 표시 여부는 processStageEvents에서 제어)
         currentAlien = null; // 초기에는 보이지 않도록 null로 설정
 
-        // ✅ [추가] 물총 애니메이션 타이머 설정
+        // ✅ [추가] 레이저 애니메이션 타이머 설정
         setupLaserAnimationTimer();
 
         setupBoomAnimationTimer();
 
+        // 정답타이밍, 재료타입, x속도, y속도, x도착좌표, y도착좌표
+        dropMats(USER_PRESS_TIMES_INT[0] + offset + 450, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
+        dropMats(USER_PRESS_TIMES_INT[1] + offset + 450, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
+        dropMats(USER_PRESS_TIMES_INT[2] + offset + 450, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
 
+        dropMats(USER_PRESS_TIMES_INT[3] + offset, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
+        dropMats(USER_PRESS_TIMES_INT[4] + offset, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
+        dropMats(USER_PRESS_TIMES_INT[5] + offset, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
+        dropMats(USER_PRESS_TIMES_INT[6] + offset - 50, materialNames[random.nextInt(3)], 0.9 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 430);
+        dropMats(USER_PRESS_TIMES_INT[7] + offset - 50, materialNames[random.nextInt(3)], -0.9 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 630);
+
+        dropMats(USER_PRESS_TIMES_INT[8] + offset - 250, "soup", 0, 4, 530);
+
+        dropMats(USER_PRESS_TIMES_INT[20] + offset, "egg", 0, 4 * DIFFICULTY_FACTOR, 530);
 
         // ✅ [추가] 스테이지3 이벤트 처리
-        addMouseListener(new MouseAdapter() {
+        addMouseListener(new MouseAdapter() {/*
             @Override
             public void mouseClicked(MouseEvent e) {
                 int clickX = e.getX();
                 int clickY = e.getY();
-
+                System.out.println("마우스 클릭됨");
                 int materialIndex = -1;
 
                 // 충돌 판정 루프
                 for (int i = 0; i < matList.size(); i++) {
                     Material mat = matList.get(i);
 
+                    System.out.println("Checking: " + mat.matType + " Bounds: " + mat.getBounds());
+                    System.out.println("Click: (" + clickX + ", " + clickY + ")");
+
                     if (mat.getBounds().contains(clickX, clickY)) {
                         Music.playEffect("laser02.mp3");
 
                         processSpaceKeyPressLogic(); // 판정 로직
+
+                        // 1. 레이저 이미지 설정 요청 (인덱스 기반) -> 클릭 좌표 기반으로 수정
+                        updateLaserFramesByClickX(clickX);
+
+                        // ⭐️ 타이머 시작 요청 -> 레이저 발사
+                        startLaserAnimation();
+
+                        if (currentJudgementText != null && !currentJudgementText.equals("MISS")) {
+                            boolean shouldExplode = true; // 기본적으로 폭발
+
+                            // ⭐️ [수정] 수프 재료 특수 로직: 정지 상태이고, 5회 미만 클릭일 때
+                            if (mat.isSoup && mat.isStopped) {
+                                mat.currentHits++; // 성공 횟수 증가
+
+                                if (mat.currentHits < mat.REQUIRED_HITS) {
+                                    // 5회 미만이면 폭발하지 않고 카운트만 증가
+                                    shouldExplode = false;
+                                }
+                            }
+
+                            if (shouldExplode) {
+                                boomDrawX = clickX;
+                                boomDrawY = clickY;
+
+                                createAndDropFragments(mat, clickX);
+                                // ‼️ [수정] 즉시 제거(matList.remove(i)) 대신 제거 플래그 설정
+                                mat.isDead = true;
+
+                                // ⭐️ 폭발 애니메이션 시작
+                                startBoomAnimation(); // <-- 이름 변경 적용
+                            }
+                        }
+
+                        // 한 번에 하나만 처리
+                        break;
+                    }
+                }
+                repaint();
+            }*/
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                int clickX = e.getX();
+                int clickY = e.getY();
+
+                // 충돌 판정 루프
+                for (int i = 0; i < matList.size(); i++) {
+                    Material mat = matList.get(i);
+
+
+                    if (mat.getBounds().contains(clickX, clickY)) {
+                        new SwingWorker<Void, Void>() {
+                            @Override
+                            protected Void doInBackground() throws Exception {
+                                // 백그라운드 스레드에서 실행
+                                Music.playEffect("laser02.mp3"); // 🎵 I/O 작업 분리
+                                processSpaceKeyPressLogic();     // 🎮 무거운 게임 로직 분리
+
+                                // createAndDropFragments(mat, clickX); // 🧩 객체 생성/초기화 작업 분리
+                                // **주의:** GUI 객체(mat)의 상태를 변경하는 작업은 doInBackground에서 직접 하지 마세요.
+
+                                return null;
+                            }
+                        }.execute();
 
                         // 1. 레이저 이미지 설정 요청 (인덱스 기반) -> 클릭 좌표 기반으로 수정
                         updateLaserFramesByClickX(clickX);
@@ -252,25 +355,6 @@ public class SpaceStage3 extends SpaceAnimation {
             updateMaterialPositions();
         });
 
-        gameTimer.start();
-
-
-        // 정답타이밍, 재료타입, x속도, y속도, x도착좌표, y도착좌표
-        dropMats(USER_PRESS_TIMES_INT[0]+offset, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
-        dropMats(USER_PRESS_TIMES_INT[1]+offset, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
-        dropMats(USER_PRESS_TIMES_INT[2]+offset, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
-
-        dropMats(USER_PRESS_TIMES_INT[3]+offset, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
-        dropMats(USER_PRESS_TIMES_INT[4]+offset, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
-        dropMats(USER_PRESS_TIMES_INT[5]+offset, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
-        dropMats(USER_PRESS_TIMES_INT[6]+offset, materialNames[random.nextInt(3)], 0.9 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 430);
-        dropMats(USER_PRESS_TIMES_INT[7]+offset, materialNames[random.nextInt(3)], -0.9 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 630);
-
-        dropMats(USER_PRESS_TIMES_INT[8]+offset, "soup", 0, 4, 530);
-
-        dropMats(USER_PRESS_TIMES_INT[20], "egg", 0, 4 * DIFFICULTY_FACTOR, 530);
-
-        // 타이머 시작
         gameTimer.start();
 
     }
@@ -717,7 +801,7 @@ public class SpaceStage3 extends SpaceAnimation {
     public void drawStageObjects(Graphics g) {
         // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
         g.drawImage(currentUser, 0, 0, null);
-
+/*
         // 2. 선의 색상 설정 (예: 빨간색)
         g.setColor(Color.RED);
 
@@ -729,7 +813,7 @@ public class SpaceStage3 extends SpaceAnimation {
         int yPos = JUDGEMENT_TARGET_Y;
 
         g.drawLine(0, yPos, screenWidth, yPos);
-
+*/
         // 배너 오버레이 (맨 위)
         if (bannerVisible && stage3Banner != null) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -878,7 +962,7 @@ class Material {
 
     // ✅ [추가] 수프 전용 필드
     public final int STOP_Y = 150; // 멈출 Y 좌표
-    public final int REQUIRED_HITS = 5; // 필요한 클릭 횟수
+    public final int REQUIRED_HITS = 7; // 필요한 클릭 횟수
 
     public boolean isSoup = false; // 수프 재료인지 여부
     public boolean isStopped = false; // 현재 멈춰있는지
@@ -1065,7 +1149,7 @@ class Material {
             // 1. 이미지 타입에 따라 크기(width, height) 결정
             switch (matType) {
                 case "chili":
-                    width = 137;
+                    width = 120;
                     height = 167;
                     break;
                 case "egg":
@@ -1092,16 +1176,16 @@ class Material {
         } else {
             switch (matType) {
                 case "chili":
-                    width = 157;
-                    height = 300;
+                    width = 126;
+                    height = 240;
                     break;
                 case "egg":
                     width = 212;
                     height = 192;
                     break;
                 case "mushroom":
-                    width = 170;
-                    height = 113;
+                    width = 204;
+                    height = 136;
                     break;
                 case "welshonion1":
                 case "welshonion2":
@@ -1136,7 +1220,8 @@ class Material {
                 //}
             } else {
                 // ⭐️ 일반 재료: 기존 방식대로 정위치에 그리기
-                g2d.drawImage(imageToDraw, (int) Math.round(x), (int) Math.round(y) - height/2, width, height, null);
+                //g2d.drawImage(imageToDraw, (int) Math.round(x), (int) Math.round(y) - height/2, width, height, null);
+                g2d.drawImage(imageToDraw, (int) Math.round(x), (int) Math.round(y), width, height, null);
             }
         }
 
@@ -1153,12 +1238,17 @@ class Material {
         if (!isStopped) {
             x += this.xSpeed;
             y += this.ySpeed;
-            System.out.println(matType + " -> x : " + x + ", y : " + y);
+            //System.out.println(matType + " -> x : " + x + ", y : " + y);
         }
     }
 
     public Rectangle getBounds() {
-        return new Rectangle((int) Math.round(x), (int) Math.round(y), width, height);
+        int padding = 10; // ⭐️ 판정 영역을 10픽셀씩 확장 (클릭 쉽게)
+
+        return new Rectangle((int) Math.round(x) - padding,  // X 시작점을 패딩만큼 왼쪽으로 이동
+                (int) Math.round(y) - padding,  // Y 시작점을 패딩만큼 위로 이동
+                width + (padding * 2),         // 너비를 양쪽 패딩만큼 확장
+                height + (padding * 2));
     }
 
 }
