@@ -4,7 +4,7 @@ import game.Cake.CakePanel;
 import game.Space.SpaceIntroPanel;
 import game.Space.SpacePanel;
 import game.Space.StageManager;
-
+import game.Cake.CakeIntro;
 
 import javax.swing.*;
 import java.awt.*;
@@ -100,10 +100,11 @@ public class GameFrame extends JFrame {
         repaint(); // 화면 다시 그리기
     }
 
+
     public void showCakeIntroScreen() {
         LobbyBgmManager.stop();
         getContentPane().removeAll(); // 기존 화면 제거
-        //getContentPane().add(new CakeIntroPanel(this));
+        getContentPane().add(new game.Cake.CakeIntro(this));  // ⭐ 인트로 패널 추가
         revalidate(); // 레이아웃 다시 계산
         repaint(); // 화면 다시 그리기
     }
