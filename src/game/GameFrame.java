@@ -1,6 +1,7 @@
 package game;
 
 import game.Cake.CakePanel;
+import game.Space.SpaceIntroPanel;
 import game.Space.SpacePanel;
 import game.Space.StageManager;
 
