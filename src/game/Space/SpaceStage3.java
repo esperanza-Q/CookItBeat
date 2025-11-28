@@ -1243,12 +1243,17 @@ class Material {
     }
 
     public Rectangle getBounds() {
+        /*
         int padding = 10; // ⭐️ 판정 영역을 10픽셀씩 확장 (클릭 쉽게)
 
         return new Rectangle((int) Math.round(x) - padding,  // X 시작점을 패딩만큼 왼쪽으로 이동
                 (int) Math.round(y) - padding,  // Y 시작점을 패딩만큼 위로 이동
                 width + (padding * 2),         // 너비를 양쪽 패딩만큼 확장
-                height + (padding * 2));
+                height + (padding * 2));*/
+        return new Rectangle((int) Math.round(x),  // X 시작점을 패딩만큼 왼쪽으로 이동
+                (int) Math.round(y),  // Y 시작점을 패딩만큼 위로 이동
+                width,         // 너비를 양쪽 패딩만큼 확장
+                height);
     }
 
 }
