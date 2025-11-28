@@ -312,11 +312,11 @@ public class SpaceAnimation extends JPanel {
             int adjustedMusicTime = currentMusicTimeMs + GLOBAL_JUDGEMENT_OFFSET_MS;
 
 //            // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
-//            System.out.println("--------------------------------------------------");
-//            System.out.println("[INPUT] Space Bar Pressed!");
-//            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
-//            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
-//            System.out.println("--------------------------------------------------");
+           System.out.println("--------------------------------------------------");
+           System.out.println("[INPUT] Space Bar Pressed!");
+           System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
+           System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
+           System.out.println("--------------------------------------------------");
 
             // ‼️ 조정된 시간을 판정 함수에 전달
             judgementManager.handleInput(adjustedMusicTime);
