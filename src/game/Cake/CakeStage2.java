@@ -99,7 +99,7 @@ public class CakeStage2 extends CakeAnimation {
     private static final int MY_WHIP_X = 140, MY_WHIP_Y = 100, MY_WHIP_W = 1280, MY_WHIP_H = 720;
 
     // ⚔️ [타이밍] 가이드
-    private static final List<Long> GUIDE_TIMES_MS = Arrays.asList(
+    private static final List<Long> ORIGINAL_GUIDE_TIMES_MS = Arrays.asList(
             55114L, 55519L, 55967L, 56880L, 56967L, 57170L, 57687L,
             61983L, 62377L, 62752L, 63158L, 63703L, 63746L, 64012L, 64109L, 64455L,
             68732L, 69174L, 69604L, 70028L, 70452L,
@@ -107,16 +107,43 @@ public class CakeStage2 extends CakeAnimation {
     );
 
     // ⚔️ [타이밍] 유저 정답
-    private static final List<Long> CORRECT_TIMES_MS = Arrays.asList(
+    private static final List<Long> ORIGINAL_CORRECT_TIMES_MS = Arrays.asList(
             58660L, 58895L, 59395L, 60191L, 60380L, 60615L, 61027L,
             65424L, 65830L, 66218L, 66611L, 67017L, 67157L, 67447L, 67538L, 67878L,
             72221L, 72591L, 73015L, 73457L, 73881L,
             77400L, 77734L, 78231L, 78686L
     );
 
+    // 💡 [추가] 오프셋 상수 정의 (Stage 1-1 종료 시간)
+    private static final long TIME_OFFSET_MS = 41000L;
+
+    // 💡 [수정] 오프셋이 적용된 최종 타이밍 리스트를 저장할 필드
+    private final List<Long> GUIDE_TIMES_MS;
+    private final List<Long> CORRECT_TIMES_MS;
+
     public CakeStage2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
+
+        // ‼️ [핵심 수정] final 키워드를 사용하여 finalOffset을 실질적으로 final로 만듭니다.
+// ‼️ 값을 단 한 번만 할당하며, 그 이후에는 변경되지 않습니다.
+        final long finalOffset = CakeStageManager.isSurpriseStageOccurred() ? TIME_OFFSET_MS : 0;
+
+        if (CakeStageManager.isSurpriseStageOccurred()) {
+            System.out.println("🎵 Stage 2: 기습 스테이지 발생으로 타이밍 오프셋 -" + finalOffset + "ms 적용.");
+        } else {
+            System.out.println("🎵 Stage 2: 기습 스테이지 미발생. 타이밍 오프셋 미적용.");
+        }
+
+// 1. 가이드 타이밍 리스트 초기화
+        GUIDE_TIMES_MS = ORIGINAL_GUIDE_TIMES_MS.stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
+
+// 2. 정답 타이밍 리스트 초기화
+        CORRECT_TIMES_MS = ORIGINAL_CORRECT_TIMES_MS.stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
 
         final long OFFSET_MS = 100;
 
