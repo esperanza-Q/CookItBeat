@@ -8,6 +8,7 @@ import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import game.Music; // 💡 [추가] Music 클래스 임포트
 
 public class CakeStage1_2 extends CakeAnimation {
 
@@ -26,6 +27,9 @@ public class CakeStage1_2 extends CakeAnimation {
 
     // 💡 [추가] 오프셋 상수 정의 (Stage 1-1 종료 시간)
     private static final long TIME_OFFSET_MS = 41000L;
+
+    // 💡 [추가] 고양이 손 클릭 효과음 파일 경로
+    private static final String CAT_HAND_SOUND_FILE = "../music/hiik.mp3";
 
     // ⚔️ [타이밍] 그림자 생성 (가이드) 타이밍
     private static final java.util.List<Long> ORIGINAL_GUIDE_TIMES_MS = Arrays.asList(
@@ -117,6 +121,19 @@ public class CakeStage1_2 extends CakeAnimation {
         playerToolImage = loadImage("../images/cakeStage_image/stage1/Scissors01_stage1-1.png");
         strawberryBodyImage = loadImage("../images/cakeStage_image/stage1/Strawberry_stage1-1.png");
         shadowImage = loadImage("../images/cakeStage_image/stage1/StrawberryShadow_stage1-1.png");
+    }
+
+    // 💡 [추가] 고양이 손 클릭 효과음 재생 로직
+    private void playCatHandSound() {
+        try {
+            // 클릭 효과음은 단발성이므로 Music 객체를 새로 생성하고 재생합니다.
+            Music clickSound = new Music(CAT_HAND_SOUND_FILE, false);
+            clickSound.start();
+//            System.out.println("🔊 고양이 손 효과음 재생: " + CAT_HAND_SOUND_FILE);
+
+        } catch (Exception e) {
+            System.err.println("🔴 고양이 손 효과음 로드 또는 재생 실패.");
+        }
     }
 
     // ‼️ [수정] 그리기 메서드
@@ -219,6 +236,9 @@ public class CakeStage1_2 extends CakeAnimation {
             }
 
             isCatHandActive = true;
+
+            // 💡 [핵심 추가] 스페이스바 누를 때 효과음 재생
+            playCatHandSound();
 
             long clickTime = currentMusicTimeMs;
 
