@@ -141,8 +141,8 @@ public class SpaceStage3 extends SpaceAnimation {
     private final int[] ALIEN_RELEASE_TIMES;
 
     // ✅ [추가] 수프 멈춤/재개 타이밍 상수
-    private final int SOUP_STOP_TIME = USER_PRESS_TIMES_INT[8] + offset - 250;   // 72.5초에 정지 조건 활성화
-    private final int SOUP_RESUME_TIME = USER_PRESS_TIMES_INT[8] + offset - 250 + 3000; // 75.5초에 재개
+    private final long SOUP_STOP_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[8] - 550;   // 72.5초에 정지 조건 활성화
+    private final long SOUP_RESUME_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[19] + 100; // 75.5초에 재개
 
     // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
     private static long[] convertToLongArray(int[] array) {
@@ -161,7 +161,7 @@ public class SpaceStage3 extends SpaceAnimation {
         result[6] = result[6] - 50 - 400;
         result[7] = result[7] - 50 - 400;
         for (int i = 8; i < 20; i++) {
-            result[i] = result[i] - 180;
+            result[i] = result[i] - 180 + 100;
         }
         result[20] = result[20] - 477;
 
@@ -225,65 +225,7 @@ public class SpaceStage3 extends SpaceAnimation {
         dropMats(USER_PRESS_TIMES_INT[20] + offset, "egg", 0, 4 * DIFFICULTY_FACTOR, 530);
 
         // ✅ [추가] 스테이지3 이벤트 처리
-        addMouseListener(new MouseAdapter() {/*
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int clickX = e.getX();
-                int clickY = e.getY();
-                System.out.println("마우스 클릭됨");
-                int materialIndex = -1;
-
-                // 충돌 판정 루프
-                for (int i = 0; i < matList.size(); i++) {
-                    Material mat = matList.get(i);
-
-                    System.out.println("Checking: " + mat.matType + " Bounds: " + mat.getBounds());
-                    System.out.println("Click: (" + clickX + ", " + clickY + ")");
-
-                    if (mat.getBounds().contains(clickX, clickY)) {
-                        Music.playEffect("laser02.mp3");
-
-                        processSpaceKeyPressLogic(); // 판정 로직
-
-                        // 1. 레이저 이미지 설정 요청 (인덱스 기반) -> 클릭 좌표 기반으로 수정
-                        updateLaserFramesByClickX(clickX);
-
-                        // ⭐️ 타이머 시작 요청 -> 레이저 발사
-                        startLaserAnimation();
-
-                        if (currentJudgementText != null && !currentJudgementText.equals("MISS")) {
-                            boolean shouldExplode = true; // 기본적으로 폭발
-
-                            // ⭐️ [수정] 수프 재료 특수 로직: 정지 상태이고, 5회 미만 클릭일 때
-                            if (mat.isSoup && mat.isStopped) {
-                                mat.currentHits++; // 성공 횟수 증가
-
-                                if (mat.currentHits < mat.REQUIRED_HITS) {
-                                    // 5회 미만이면 폭발하지 않고 카운트만 증가
-                                    shouldExplode = false;
-                                }
-                            }
-
-                            if (shouldExplode) {
-                                boomDrawX = clickX;
-                                boomDrawY = clickY;
-
-                                createAndDropFragments(mat, clickX);
-                                // ‼️ [수정] 즉시 제거(matList.remove(i)) 대신 제거 플래그 설정
-                                mat.isDead = true;
-
-                                // ⭐️ 폭발 애니메이션 시작
-                                startBoomAnimation(); // <-- 이름 변경 적용
-                            }
-                        }
-
-                        // 한 번에 하나만 처리
-                        break;
-                    }
-                }
-                repaint();
-            }*/
-
+        addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 int clickX = e.getX();
@@ -292,7 +234,6 @@ public class SpaceStage3 extends SpaceAnimation {
                 // 충돌 판정 루프
                 for (int i = 0; i < matList.size(); i++) {
                     Material mat = matList.get(i);
-
 
                     if (mat.getBounds().contains(clickX, clickY)) {
                         new SwingWorker<Void, Void>() {
@@ -321,11 +262,7 @@ public class SpaceStage3 extends SpaceAnimation {
                             // ⭐️ [수정] 수프 재료 특수 로직: 정지 상태이고, 5회 미만 클릭일 때
                             if (mat.isSoup && mat.isStopped) {
                                 mat.currentHits++; // 성공 횟수 증가
-
-                                if (mat.currentHits < mat.REQUIRED_HITS) {
-                                    // 5회 미만이면 폭발하지 않고 카운트만 증가
-                                    shouldExplode = false;
-                                }
+                                shouldExplode = false;
                             }
 
                             if (shouldExplode) {
@@ -691,17 +628,37 @@ public class SpaceStage3 extends SpaceAnimation {
             if (mat.isSoup) {
                 //System.out.println(수프정지);
                 // 1. 정지 조건: 72.5초가 지났고, Y좌표가 150에 도달했을 때
-                if (!mat.isStopped && progressTime >= SOUP_STOP_TIME && mat.getY() >= mat.STOP_Y && progressTime < SOUP_RESUME_TIME) {
+                if (!mat.isStopped && progressTime >= SOUP_STOP_TIME && progressTime < SOUP_RESUME_TIME) { // && mat.getY() >= mat.STOP_Y 조건 뺌
                     mat.isStopped = true;
-                    mat.setY(mat.STOP_Y); // 정확히 150에 고정
+                    mat.setY(mat.getY()); // 정확히 150에 고정
                     System.out.println("수프 정지");
+                    continue;
                 }
 
                 // 2. 재개 조건: 75.5초가 지났을 때
                 if (mat.isStopped && progressTime >= SOUP_RESUME_TIME) {
-                    mat.isStopped = false;
-                    System.out.println("수프 재개");
-                }
+                    if (mat.currentHits >= 8) {
+                        System.out.println("수프 폭발! (클릭 횟수: " + mat.currentHits + ")");
+
+                        // ⚠️ 폭발 로직은 충돌 좌표가 없으므로, 수프의 현재 위치를 폭발 좌표로 사용합니다.
+                        // (클릭 좌표가 필요하다면, matList에서 제거 전에 저장해 둔 좌표를 사용해야 합니다.)
+                        boomDrawX = (int)mat.getX() + mat.getWidth() / 2;
+                        boomDrawY = (int)mat.getY() + mat.getHeight() / 2;
+
+                        // 폭발 애니메이션 및 잔해 생성 (필요하다면 구현)
+                        createAndDropFragments(mat, boomDrawX);
+                        startBoomAnimation();
+
+                        iterator.remove(); // 리스트에서 수프 제거
+                        continue;
+                    } else {
+                        // 2-2. 8회 미만 클릭 시 재개 (MISS 처리)
+                        System.out.println("수프 재개! (클릭 횟수 부족: " + mat.currentHits + ")");
+                        mat.isStopped = false; // 재개 상태로 전환
+                        mat.pauseTime = SOUP_RESUME_TIME - SOUP_STOP_TIME;
+                        System.out.println("수프 위치 : ("+mat.getX()+", "+mat.getY()+")");
+                    }
+                } else if (mat.isStopped && progressTime < SOUP_RESUME_TIME) continue;
 
             }
             //System.out.println("현재 시간: " + StageManager.progressTime);
@@ -709,7 +666,7 @@ public class SpaceStage3 extends SpaceAnimation {
             // --- [기존 로직: 재료 이동] ---
             if (StageManager.progressTime >= mat.actualDropStartTime) {
                 // 1. 실제 경과 시간 (ms) 계산
-                long finalElapsedTime = progressTime - mat.actualDropStartTime;
+                long finalElapsedTime = progressTime - mat.actualDropStartTime - mat.pauseTime;
 
                 // 2. 픽셀/틱 속도를 픽셀/ms 속도로 변환
                 double speedX_ms = mat.getXSpeed() / (double) SLEEP_TIME;
@@ -1023,6 +980,8 @@ class Material {
     public double rotationAngle = 0; // ⭐️ 회전 각도 (라디안 또는 도)
 
     public boolean isDead = false; // 제거 대상으로 표시
+
+    public long pauseTime = 0;
 
     public Material(double x, double y, String matType, double xSpeed, double ySpeed, long targetArriveTime, long dropStartTime) {
         this.initialX = x;
