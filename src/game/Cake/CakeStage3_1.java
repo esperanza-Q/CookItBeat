@@ -243,11 +243,11 @@ public class CakeStage3_1 extends CakeAnimation {
             int adjustedMusicTime = currentMusicTimeMs + JUDGEMENT_OFFSET_MS;
 
             // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
-            System.out.println("--------------------------------------------------");
-            System.out.println("[INPUT] Space Bar Pressed!");
-            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
-            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
-            System.out.println("--------------------------------------------------");
+//            System.out.println("--------------------------------------------------");
+//            System.out.println("[INPUT] Space Bar Pressed!");
+//            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
+//            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
+//            System.out.println("--------------------------------------------------");
 
             // ‼️ 조정된 시간을 판정 함수에 전달
             judgementManager.handleInput(adjustedMusicTime);
@@ -255,6 +255,15 @@ public class CakeStage3_1 extends CakeAnimation {
             // 💡 [핵심 추가] judgementManager의 현재 점수를 StageManager에 저장
             int currentTotalScore = judgementManager.getScore();
             CakeStageManager.setCumulativeScore(currentTotalScore);
+
+
+            // 판정 문자열 가져오기
+            String judgement = judgementManager.getLastJudgement();
+
+            // ✅ 여기서 공통 처리
+            //    - perfect/good/miss 카운트 증가
+            //    - (구현에 따라) lastJudgementResult, 판정 이펙트 처리
+            registerJudgement(judgement);
 
             lastJudgementResult = judgementManager.getLastJudgement();
             judgementDisplayStartTime = currentMusicTimeMs;

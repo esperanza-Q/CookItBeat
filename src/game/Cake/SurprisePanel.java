@@ -251,7 +251,7 @@ public class SurprisePanel extends JPanel {
         // 2. 커스텀 폰트 로드 시도
         try {
             // ⚠️ 파일 경로를 프로젝트 구조에 맞게 수정하세요.
-            File fontFile = new File("src/fonts/LAB디지털.ttf");
+            File fontFile = new File("src/fonts/ThinDungGeunMo.ttf");
 
             // InputStream을 사용하여 로드
             try (InputStream is = new FileInputStream(fontFile)) {
@@ -392,8 +392,9 @@ public class SurprisePanel extends JPanel {
             String titleText2 = "10초 안에 대왕 딸기를 부수세요!";
 
             int margin = 20;
+
             int textY1 = margin + g2.getFontMetrics().getHeight();
-            int textY2 = textY1 + g2.getFontMetrics().getHeight() - 10; // 줄 간격 조정
+            int textY2 = textY1 + g2.getFontMetrics().getHeight() + 10; // 줄 간격 조정
 
             // 텍스트 오른쪽 정렬을 위한 X 좌표 계산
             int textX1 = getWidth() - margin - g2.getFontMetrics().stringWidth(titleText1);

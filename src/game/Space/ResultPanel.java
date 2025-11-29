@@ -5,7 +5,6 @@ import game.Music;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
@@ -25,6 +24,7 @@ public class ResultPanel extends JPanel {
 
     private Music resultMusic;
     private boolean musicPlayed = false;
+    private Color rankColor = Color.WHITE;  // ✅ 등급/숫자 색
 
     // ✅ controller 받는 생성자로 변경
     public ResultPanel(SpacePanel controller) {
@@ -35,31 +35,19 @@ public class ResultPanel extends JPanel {
         ImageIcon tolobby1 = new ImageIcon(getClass().getResource("../../images/mainUI/Buttons/tolobbyButton_unselected.png"));
         ImageIcon tolobby2 = new ImageIcon(getClass().getResource("../../images/mainUI/Buttons/tolobbyButton_selected.png"));
         lobbyButton = new JButton();    // ✅ 로비 버튼 생성
-        // 1. 버튼에서 기본 텍스트 제거
         lobbyButton.setText(null);
-
-        // 2. 버튼의 기본 아이콘 설정 (unselected)
         lobbyButton.setIcon(tolobby1);
-
-        // 3. 마우스가 올라갔을 때(rollover) 아이콘 설정 (selected)
         lobbyButton.setRolloverIcon(tolobby2);
-
-        // 4. 버튼 배경과 테두리를 투명하게 설정하여 이미지 자체만 보이도록 합니다.
-        lobbyButton.setBorderPainted(false);      // 테두리 제거
-        lobbyButton.setContentAreaFilled(false);  // 내용 영역 채우기 제거 (배경 투명화)
-        // ------------------ 👆 [수정/추가됨] 이미지 및 스타일 설정 👆 ------------------
-
+        lobbyButton.setBorderPainted(false);
+        lobbyButton.setContentAreaFilled(false);
         lobbyButton.setFocusPainted(false);
-        lobbyButton.setBounds(880, 600, 300, 60); // 원하는 위치면 여기만 바꾸면 됨
+        lobbyButton.setBounds(880, 600, 300, 60);
 
         lobbyButton.addActionListener(e -> {
-            // 결과 음악 끄기
             if (resultMusic != null) {
                 resultMusic.close();
                 resultMusic = null;
             }
-
-            // ✅ 로비로 이동
             if (controller != null) {
                 controller.goToLobby();
             }
@@ -73,18 +61,13 @@ public class ResultPanel extends JPanel {
 
         // ✅ 폰트 로드
         try {
-            File fontFile = new File("C:\\Users\\SAMSUNG\\Desktop\\project_cookItBeat\\CookItBeat\\src\\fonts\\LAB디지털.ttf");
-            InputStream is = new FileInputStream(fontFile);
-
+            InputStream is = Main.class.getResourceAsStream("../fonts/LAB디지털.ttf");
             Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);
-            is.close();
-
             scoreFont  = baseFont.deriveFont(Font.BOLD, 32f);
             detailFont = baseFont.deriveFont(Font.BOLD, 26f);
             rankFont   = baseFont.deriveFont(Font.BOLD, 40f);
-
         } catch (Exception e) {
-            System.err.println("폰트 로딩 실패. 기본 폰트 사용: " + e.getMessage());
+            System.err.println("폰트 로딩 실패: " + e.getMessage());
             scoreFont  = new Font("Dialog", Font.BOLD, 32);
             detailFont = new Font("Dialog", Font.BOLD, 26);
             rankFont   = new Font("Dialog", Font.BOLD, 40);
@@ -94,23 +77,26 @@ public class ResultPanel extends JPanel {
     public void setResult(int score) {
         this.finalScore = score;
 
-        if (score >= 700) {
+        if (score >= 2000) {
             resultText = "Perfect RANK!";
             resultImage = new ImageIcon(Main.class.getResource(
                     "../images/alienStage_image/Result_Perfect02.png"
             )).getImage();
+            rankColor = new Color(255, 230, 0); // 연노랑
 
-        } else if (score >= 500) {
+        } else if (score >= 1000) {
             resultText = "Good RANK!";
             resultImage = new ImageIcon(Main.class.getResource(
                     "../images/alienStage_image/Result_Good.png"
             )).getImage();
+            rankColor = new Color(255, 165, 0); // 주황
 
         } else {
             resultText = "Bad RANK!";
             resultImage = new ImageIcon(Main.class.getResource(
                     "../images/alienStage_image/Result_Bad.png"
             )).getImage();
+            rankColor = new Color(255, 70, 70);  // 빨강
         }
 
         playResultMusic();
@@ -138,18 +124,19 @@ public class ResultPanel extends JPanel {
 
         int pad = (int)(safeW * 0.04);
 
-        int leftBoxW = (int)(safeW * 0.55);
-        int leftBoxH = (int)(safeH * 0.48);
-        int leftBoxX = safeX + pad;
+        int leftBoxW = (int)(safeW * 0.62);
+        int leftBoxH = (int)(safeH * 0.78);
+        int leftBoxX = safeX + pad - 40 ;
         int leftBoxY = safeY + (safeH - leftBoxH) / 2;
 
+        // ✅ right 박스 줄이고 bottom 박스 키움 (Cake와 맞춤)
         int rightBoxW = (int)(safeW * 0.33);
-        int rightBoxH = (int)(safeH * 0.55);
+        int rightBoxH = (int)(safeH * 0.40);   // 0.55 → 0.40
         int rightBoxX = safeX + safeW - rightBoxW - pad;
         int rightBoxY = safeY + (int)(safeH * 0.10);
 
         int bottomBoxW = rightBoxW;
-        int bottomBoxH = (int)(safeH * 0.12);
+        int bottomBoxH = (int)(safeH * 0.22);  // 0.12 → 0.22
         int bottomBoxX = rightBoxX;
         int bottomBoxY = rightBoxY + rightBoxH + (int)(safeH * 0.04);
 
@@ -158,8 +145,31 @@ public class ResultPanel extends JPanel {
         g2.fillRoundRect(rightBoxX, rightBoxY, rightBoxW, rightBoxH, 20, 20);
         g2.fillRoundRect(bottomBoxX, bottomBoxY, bottomBoxW, bottomBoxH, 20, 20);
 
+        // ---------- 왼쪽 결과 이미지 ----------
         if (resultImage != null) {
-            g2.drawImage(resultImage, leftBoxX, leftBoxY, leftBoxW, leftBoxH, this);
+
+            int imgW0 = resultImage.getWidth(this);
+            int imgH0 = resultImage.getHeight(this);
+
+            if (imgW0 > 0 && imgH0 > 0) {
+                double sizeScale = 1.13;
+
+                double baseScale = Math.min(
+                        (double) leftBoxW / imgW0,
+                        (double) leftBoxH / imgH0
+                );
+
+                double finalScale = baseScale * sizeScale;
+
+                int imgW = (int) (imgW0 * finalScale);
+                int imgH = (int) (imgH0 * finalScale);
+
+                int imgX = leftBoxX + (leftBoxW - imgW) / 2;
+                int imgY = leftBoxY + (leftBoxH - imgH) / 2;
+
+                g2.drawImage(resultImage, imgX, imgY, imgW, imgH, this);
+            }
+
         } else {
             g2.setColor(Color.WHITE);
             g2.setFont(rankFont);
@@ -167,9 +177,11 @@ public class ResultPanel extends JPanel {
                     new Rectangle(leftBoxX, leftBoxY, leftBoxW, leftBoxH));
         }
 
+        // ---------- 오른쪽 상단: 합산 정보 ----------
         g2.setColor(Color.WHITE);
-        g2.setFont(detailFont);
 
+        // 제목 Bold 크게
+        g2.setFont(rankFont);
         int textX = rightBoxX + pad;
         int textY = rightBoxY + pad + 10;
         int lineGap = 40;
@@ -177,23 +189,58 @@ public class ResultPanel extends JPanel {
         g2.drawString("점수 합산", textX, textY);
         textY += lineGap;
 
+        // 수치는 detailFont
+        g2.setFont(detailFont);
         int perfectCount = StageManager.getPerfectCount();
         int goodCount = StageManager.getGoodCount();
         int missCount = StageManager.getMissCount();
 
         g2.drawString("Perfect : " + perfectCount, textX, textY); textY += lineGap;
-        g2.drawString("Good    : " + goodCount, textX, textY); textY += lineGap;
-        g2.drawString("Miss    : " + missCount, textX, textY);
+        g2.drawString("Good    : " + goodCount,   textX, textY); textY += lineGap;
+        g2.drawString("Miss    : " + missCount,   textX, textY);
 
-        g2.setFont(scoreFont);
+        // ---------- 오른쪽 하단: 최종 등급 + 점수 (부분 색, 두 줄 붙이기) ----------
+        g2.setFont(scoreFont);  // ✅ Bold 폰트 (최종 등급 / 점수 라벨 & 값)
 
-        String rankLine = "최종 등급 : " + resultText;
-        String scoreLine = "점수 : " + finalScore;
+        FontMetrics fm = g2.getFontMetrics(scoreFont);
+        int lineHeight   = fm.getHeight();
+        int lineGap2     = 6;   // 두 줄 사이 간격
+        int totalLinesHeight = lineHeight * 2 + lineGap2;
 
-        drawCenteredString(g2, rankLine,
-                new Rectangle(bottomBoxX, bottomBoxY, bottomBoxW, bottomBoxH/2));
-        drawCenteredString(g2, scoreLine,
-                new Rectangle(bottomBoxX, bottomBoxY + bottomBoxH/2, bottomBoxW, bottomBoxH/2));
+        int firstBaseY  = bottomBoxY + (bottomBoxH - totalLinesHeight) / 2 + fm.getAscent();
+        int secondBaseY = firstBaseY + lineHeight + lineGap2;
+
+        // === 1) 최종 등급 ===
+        String baseRankLabel = "최종 등급 : ";
+        String rankValue     = resultText;           // (예: Bad RANK!)
+
+        int totalRankWidth   = fm.stringWidth(baseRankLabel + rankValue);
+        int startX           = bottomBoxX + (bottomBoxW - totalRankWidth) / 2;
+        int rankLabelWidth   = fm.stringWidth(baseRankLabel);
+
+        // 라벨(흰색)
+        g2.setColor(Color.WHITE);
+        g2.drawString(baseRankLabel, startX, firstBaseY);
+
+        // 값(색 - 빨/주/노)
+        g2.setColor(rankColor);
+        g2.drawString(rankValue, startX + rankLabelWidth, firstBaseY);
+
+        // === 2) 점수 ===
+        String scoreLabel = "점수 : ";
+        String scoreValue = String.valueOf(finalScore);
+
+        int totalScoreWidth = fm.stringWidth(scoreLabel + scoreValue);
+        int startX2         = bottomBoxX + (bottomBoxW - totalScoreWidth) / 2;
+        int scoreLabelWidth = fm.stringWidth(scoreLabel);
+
+        // 라벨(흰색)
+        g2.setColor(Color.WHITE);
+        g2.drawString(scoreLabel, startX2, secondBaseY);
+
+        // 숫자만 색
+        g2.setColor(rankColor);
+        g2.drawString(scoreValue, startX2 + scoreLabelWidth, secondBaseY);
 
         g2.dispose();
     }
