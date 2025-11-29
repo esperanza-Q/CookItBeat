@@ -36,8 +36,8 @@ public class CakeStageManager {
     // 💡 [추가] 기습 스테이지 발생 여부 플래그
     private static boolean isSurpriseStageOccurred = false;
 
-    // 💡 [추가] 기습 스테이지 발생 확률 (예: 30%)
-    private static final double SURPRISE_CHANCE = 1.0;
+    // 💡 [추가] 기습 스테이지 발생 확률 (예: 50%)
+    private static final double SURPRISE_CHANCE = 0.5;
 
     // 💡 [추가] 기습 스테이지 발생을 결정하는 메서드
     public static void checkSurpriseStage() {
