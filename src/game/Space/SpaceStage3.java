@@ -161,7 +161,7 @@ public class SpaceStage3 extends SpaceAnimation {
         result[6] = result[6] - 50 - 400;
         result[7] = result[7] - 50 - 400;
         for (int i = 8; i < 20; i++) {
-            result[i] = result[i] - 180 + 100;
+            result[i] = result[i] - 180;
         }
         result[20] = result[20] - 477;
 
@@ -209,10 +209,10 @@ public class SpaceStage3 extends SpaceAnimation {
 
         setupBoomAnimationTimer();
 
-        // 정답타이밍, 재료타입, x속도, y속도, x도착좌표, y도착좌표
-        dropMats(USER_PRESS_TIMES_INT[0] + offset + 450, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
-        dropMats(USER_PRESS_TIMES_INT[1] + offset + 450, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
-        dropMats(USER_PRESS_TIMES_INT[2] + offset + 450, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
+        // 도착시간, 재료타입, x속도, y속도, x도착좌표, y도착좌표
+        dropMats(USER_PRESS_TIMES_INT[0] + offset + 500, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
+        dropMats(USER_PRESS_TIMES_INT[1] + offset + 500, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
+        dropMats(USER_PRESS_TIMES_INT[2] + offset + 500, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
 
         dropMats(USER_PRESS_TIMES_INT[3] + offset, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
         dropMats(USER_PRESS_TIMES_INT[4] + offset, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
@@ -264,6 +264,8 @@ public class SpaceStage3 extends SpaceAnimation {
                                 mat.currentHits++; // 성공 횟수 증가
                                 shouldExplode = false;
                             }
+
+                            if (mat.isEgg) mat.imageToDraw = mat.eggImage2;
 
                             if (shouldExplode) {
                                 boomDrawX = clickX;
@@ -887,7 +889,8 @@ public class SpaceStage3 extends SpaceAnimation {
 class Material {
     private Image chiliImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/chili01.png"))
             .getImage();
-    private Image eggImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/egg.png")).getImage();
+    private Image eggImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/egg01.png")).getImage();
+    public Image eggImage2 = new ImageIcon(Main.class.getResource("../images/alienStage_image/egg02.png")).getImage();
     private Image mushroomImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/mushroom01.png"))
             .getImage();
     private Image welshonion1Image = new ImageIcon(
@@ -924,6 +927,11 @@ class Material {
     public boolean isSoup = false; // 수프 재료인지 여부
     public boolean isStopped = false; // 현재 멈춰있는지
     public int currentHits = 0; // 현재 성공한 클릭 횟수 (멈춰있을 때만 증가)
+
+    public boolean isEgg = false; // 수프 재료인지 여부
+
+    // ⭐️ 그려야 할 이미지 객체 선택
+    Image imageToDraw = null;
 
     public int getWidth() {
         return width;
@@ -996,6 +1004,7 @@ class Material {
         this.isFragment = false;
 
         this.isSoup = matType.equals("soup");
+        this.isEgg = matType.equals("egg");
 
     }
 
@@ -1014,45 +1023,9 @@ class Material {
     }
 
     public void screenDraw(Graphics g) {
-		/*
-		switch (matType) {
-		case "chili":
-			width = 157;
-			height = 300;
-			g.drawImage(chiliImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "egg":
-			width = 212;
-			height = 192;
-			g.drawImage(eggImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "mushroom":
-			width = 170;
-			height = 113;
-			g.drawImage(mushroomImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "welshonion1":
-			width = 200;
-			height = 200;
-			g.drawImage(welshonion1Image, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "welshonion2":
-			width = 200;
-			height = 200;
-			g.drawImage(welshonion2Image, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "soup":
-			width = 220;
-			height = 271;
-			g.drawImage(soupImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		}
-	*/
         // ⭐️ Graphics2D 객체 준비 (회전 및 변환을 위해 필요)
         Graphics2D g2d = (Graphics2D) g.create();
 
-        // ⭐️ 그려야 할 이미지 객체 선택
-        Image imageToDraw = null;
 
         if (this.isFragment) {
             // 잔해 조각일 경우: Sliced 이미지 사용
@@ -1139,8 +1112,8 @@ class Material {
                     height = 240;
                     break;
                 case "egg":
-                    width = 212;
-                    height = 192;
+                    width = 320;
+                    height = 180;
                     break;
                 case "mushroom":
                     width = 204;
