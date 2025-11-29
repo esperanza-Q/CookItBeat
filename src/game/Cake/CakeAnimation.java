@@ -54,6 +54,9 @@ public abstract class CakeAnimation extends JPanel {
     protected String lastJudgementResult = "NONE"; // 마지막 판정 결과 (문자열)
     protected long judgementDisplayStartTime = 0;   // 판정 이미지가 표시되기 시작한 시간
 
+    private static final long TIME_OFFSET_MS = 41000L;
+
+
     private final int GLOBAL_JUDGEMENT_OFFSET_MS = -120;
     private static final int JUDGEMENT_DISPLAY_DURATION = 600; // 0.8초간 표시
 
@@ -187,7 +190,37 @@ public abstract class CakeAnimation extends JPanel {
             int musicLengthSec = Music.getMusicLength(musicFileName);
             int musicLengthMs = musicLengthSec * 1000;
 
-            double progress = (double) currentMusicTimeMs / musicLengthMs;
+            // ------------------ ‼️ [핵심 수정] 기습 시간 보정 ‼️ ------------------
+
+            // 1. 기습 발생 시 총 음악 길이에서 10초를 뺀 길이를 최종 길이로 사용
+            long lengthAdjustment = CakeStageManager.getMusicLengthAdjustment();
+            long adjustedMusicLengthMs = musicLengthMs;
+
+            // 2. 현재 진행 시간: Stage 1-1 종료 후 멈춰야 할 시간(41000ms)을 찾습니다.
+            int baseProgressTime = currentMusicTimeMs;
+
+            if (CakeStageManager.isSurpriseStageOccurred()) {
+
+                // 기습 스테이지가 발생했을 때
+                if (CakeStageManager.getCurrentStage() == 1) {
+                    // Stage 1-1 진행 중이라면 41000ms까지는 정상적으로 진행
+                    // 41000ms 이후에는 멈춰야 합니다.
+                    baseProgressTime = (int) Math.min(currentMusicTimeMs, TIME_OFFSET_MS); // TIME_OFFSET_MS는 41000L
+
+                } else if (CakeStageManager.getCurrentStage() >= 2) {
+                    // Stage 1-2 이후: 기습 때문에 41000ms부터 다시 시작한 음악 시간만큼 보정합니다.
+                    // currentMusicTimeMs에서 41000ms만큼 오프셋을 빼서,
+                    // 토끼가 41000ms 지점부터 다시 0ms에서 출발한 것처럼 보이게 합니다.
+                    baseProgressTime = currentMusicTimeMs + (int)CakeStageManager.getMusicTimeOffset();
+
+                }
+            }
+
+            // 3. 진행률 계산 (총 길이는 보정된 길이 사용)
+            double progress = (double) baseProgressTime / adjustedMusicLengthMs;
+
+            // --------------------------------------------------------------------------
+
             progress = Math.min(1.0, Math.max(0.0, progress));
 
             int rabbitIconX = (int) (BAR_X + ((BAR_WIDTH-130) * progress)) - (rabbitIcon.getWidth(null) / 2);

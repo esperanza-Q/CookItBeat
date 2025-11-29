@@ -2,6 +2,7 @@ package game.Cake;
 
 import game.rhythm.RhythmJudgementManager;
 
+import game.Music; // 💡 [추가] Music 클래스 임포트
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -31,6 +32,9 @@ public class CakeStage1_1 extends CakeAnimation {
 
     // ✂️ [유지] 마우스 리스너 인스턴스
     private ScissorsMouseListener mouseListener;
+
+    // 💡 [추가] 가위 클릭 효과음 파일 경로
+    private static final String SCISSORS_SOUND_FILE = "../music/sissors.mp3";
 
     // ⚔️ [타이밍] 그림자 생성 (가이드) 타이밍
     private static final List<Long> SHADOW_CREATION_TIMES_MS = Arrays.asList(
@@ -125,6 +129,19 @@ public class CakeStage1_1 extends CakeAnimation {
         shadowImage = loadImage("../images/cakeStage_image/stage1/StrawberryShadow_stage1-1.png");
 
         strawberryTopImage = loadImage("../images/cakeStage_image/stage1/StrawberryTop_stage1-1.png");
+    }
+
+    // 💡 [추가] 가위 클릭 효과음 재생 로직
+    private void playScissorsClickSound() {
+        try {
+            // 클릭 효과음은 단발성이므로 Music 객체를 새로 생성하고 재생합니다.
+            Music clickSound = new Music(SCISSORS_SOUND_FILE, false);
+            clickSound.start();
+//            System.out.println("🔊 가위 클릭 효과음 재생: " + SCISSORS_SOUND_FILE);
+
+        } catch (Exception e) {
+            System.err.println("🔴 가위 클릭 효과음 로드 또는 재생 실패.");
+        }
     }
 
     // ‼️ [수정] 게임 로직 업데이트 메서드 (리스트 수정 전 동기화 블록 추가)
@@ -308,6 +325,9 @@ public class CakeStage1_1 extends CakeAnimation {
             isScissorsActive = true;
             scissorsX = e.getX() - (SCISSORS_SIZE / 2);
             scissorsY = e.getY() - (SCISSORS_SIZE / 2);
+
+            // 💡 [핵심 추가] 가위 클릭 효과음 재생
+            playScissorsClickSound();
 
             // ‼️ [수정] 판정 시간 계산 시, JUDGEMENT_OFFSET_MS(30ms)를 사용
             long clickTime = currentMusicTimeMs + JUDGEMENT_OFFSET_MS;

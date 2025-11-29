@@ -8,6 +8,7 @@ import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import game.Music; // 💡 [추가] Music 클래스 임포트
 
 public class CakeStage1_2 extends CakeAnimation {
 
@@ -24,24 +25,37 @@ public class CakeStage1_2 extends CakeAnimation {
     private static final int EGG_DROP_DURATION = 200; // 계란이 떨어지는 애니메이션 시간 (0.5초)
     private static final int EGG_DROP_DISTANCE = 450; // 계란이 Y축으로 떨어지는 최대 거리 (픽셀)
 
+    // 💡 [추가] 오프셋 상수 정의 (Stage 1-1 종료 시간)
+    private static final long TIME_OFFSET_MS = 41000L;
+
+    // 💡 [추가] 고양이 손 클릭 효과음 파일 경로
+    private static final String CAT_HAND_SOUND_FILE = "../music/hiik.mp3";
+
     // ⚔️ [타이밍] 그림자 생성 (가이드) 타이밍
-    private static final java.util.List<Long> GUIDE_TIMES_MS = Arrays.asList(
+    private static final java.util.List<Long> ORIGINAL_GUIDE_TIMES_MS = Arrays.asList(
             41308L, 41519L, 41736L, 42159L, 42386L, 42600L,
             44731L, 45173L, 45607L, 46025L,
             48372L, 48581L, 49250L, 49450L
     );
 
     // ⚔️ [타이밍] 유저 정답 타이밍 (계란 떨어지는 타이밍)
-    private static final List<Long> CORRECT_TIMES_MS = Arrays.asList(
+    private static final List<Long> ORIGINAL_CORRECT_TIMES_MS = Arrays.asList(
             43026L, 43250L, 43441L, 43880L, 44100L, 44305L,
             46498L, 46885L, 47307L, 47732L,
             50122L, 50403L, 50965L, 51174L
     );
 
+
+
     private Image box;
     private Image bowl;
     private Image egg;
     private Image dropEgg;
+
+
+    // 💡 [수정] 오프셋이 적용된 최종 타이밍 리스트를 저장할 필드
+    private final List<Long> GUIDE_TIMES_MS;
+    private final List<Long> CORRECT_TIMES_MS;
 
     // ⚔️ [유지] 카드 이미지 전환 지속 시간 (깜빡임용)
     private static final int CARD_TRANSITION_DURATION_MS = 50;
@@ -54,6 +68,26 @@ public class CakeStage1_2 extends CakeAnimation {
     public CakeStage1_2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
+
+        // ‼️ [핵심 수정] final 키워드를 사용하여 finalOffset을 실질적으로 final로 만듭니다.
+// ‼️ 값을 단 한 번만 할당하며, 그 이후에는 변경되지 않습니다.
+        final long finalOffset = CakeStageManager.isSurpriseStageOccurred() ? TIME_OFFSET_MS : 0;
+
+        if (CakeStageManager.isSurpriseStageOccurred()) {
+            System.out.println("🎵 Stage 1-2: 기습 스테이지 발생으로 타이밍 오프셋 -" + finalOffset + "ms 적용.");
+        } else {
+            System.out.println("🎵 Stage 1-2: 기습 스테이지 미발생. 타이밍 오프셋 미적용.");
+        }
+
+// 1. 가이드 타이밍 리스트 초기화
+        GUIDE_TIMES_MS = ORIGINAL_GUIDE_TIMES_MS.stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
+
+// 2. 정답 타이밍 리스트 초기화
+        CORRECT_TIMES_MS = ORIGINAL_CORRECT_TIMES_MS.stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
 
         final long OFFSET_MS = 100;
 
@@ -87,6 +121,19 @@ public class CakeStage1_2 extends CakeAnimation {
         playerToolImage = loadImage("../images/cakeStage_image/stage1/Scissors01_stage1-1.png");
         strawberryBodyImage = loadImage("../images/cakeStage_image/stage1/Strawberry_stage1-1.png");
         shadowImage = loadImage("../images/cakeStage_image/stage1/StrawberryShadow_stage1-1.png");
+    }
+
+    // 💡 [추가] 고양이 손 클릭 효과음 재생 로직
+    private void playCatHandSound() {
+        try {
+            // 클릭 효과음은 단발성이므로 Music 객체를 새로 생성하고 재생합니다.
+            Music clickSound = new Music(CAT_HAND_SOUND_FILE, false);
+            clickSound.start();
+//            System.out.println("🔊 고양이 손 효과음 재생: " + CAT_HAND_SOUND_FILE);
+
+        } catch (Exception e) {
+            System.err.println("🔴 고양이 손 효과음 로드 또는 재생 실패.");
+        }
     }
 
     // ‼️ [수정] 그리기 메서드
@@ -189,6 +236,9 @@ public class CakeStage1_2 extends CakeAnimation {
             }
 
             isCatHandActive = true;
+
+            // 💡 [핵심 추가] 스페이스바 누를 때 효과음 재생
+            playCatHandSound();
 
             long clickTime = currentMusicTimeMs;
 

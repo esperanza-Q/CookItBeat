@@ -8,8 +8,10 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CakeStage2_oven extends CakeAnimation {
 
@@ -35,17 +37,43 @@ public class CakeStage2_oven extends CakeAnimation {
     private static final int BASE_X = 0;
     private static final int BASE_Y = 0;
 
+    // 💡 [추가] 오프셋 상수 정의 (Stage 1-1 종료 시간)
+    private static final long TIME_OFFSET_MS = 41000L;
+
+    // 💡 [수정] 오프셋이 적용된 최종 타이밍 리스트를 저장할 필드
+    private final long[] BEAT_TIMES_MS;
+    private final long DING_TIME_MS;
+
     // ====== 비트 타이밍(ms) ======
-    private static final long[] BEAT_TIMES_MS = {
+    private static final long[] ORIGINAL_BEAT_TIMES_MS = {
             82551, 82920, 83396, 83970, 84023, 84272, 84620, 85016
     };
 
     // 1분25초 띵(끝)
-    private static final long DING_TIME_MS = 85549;
+    private static final long ORIGINAL_DING_TIME_MS = 85549;
 
     public CakeStage2_oven(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
+
+        // ‼️ [핵심 수정] final 키워드를 사용하여 finalOffset을 실질적으로 final로 만듭니다.
+// ‼️ 값을 단 한 번만 할당하며, 그 이후에는 변경되지 않습니다.
+        final long finalOffset = CakeStageManager.isSurpriseStageOccurred() ? TIME_OFFSET_MS : 0;
+
+        if (CakeStageManager.isSurpriseStageOccurred()) {
+            System.out.println("🎵 Stage oven: 기습 스테이지 발생으로 타이밍 오프셋 -" + finalOffset + "ms 적용.");
+        } else {
+            System.out.println("🎵 Stage oven: 기습 스테이지 미발생. 타이밍 오프셋 미적용.");
+        }
+
+// 1. 가이드 타이밍 리스트 초기화
+        BEAT_TIMES_MS = Arrays.stream(ORIGINAL_BEAT_TIMES_MS)
+                .map(time -> time - finalOffset)
+                .toArray();
+
+// 2. 정답 타이밍 리스트 초기화
+        DING_TIME_MS = ORIGINAL_DING_TIME_MS - finalOffset;
+
 
         List<Long> guideTimesMs = new ArrayList<>(stageData.getCorrectTimings());
         guideTimesMs.add(DING_TIME_MS); // 85549도 판정 노트로 추가
