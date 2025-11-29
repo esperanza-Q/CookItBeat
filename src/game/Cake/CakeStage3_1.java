@@ -11,6 +11,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CakeStage3_1 extends CakeAnimation {
 
@@ -25,7 +26,7 @@ public class CakeStage3_1 extends CakeAnimation {
 
     private boolean aPressed, dPressed, sPressed, fPressed;
 
-    private static final int[] GUIDE_TIMES_INT = {
+    private static final int[] ORIGINAL_GUIDE_TIMES_MS = {
             89290, 89495, 89700, 89910,
             90142, 90350, 90557, 90767, // 짜기
             90993, 91430, 91845 // 바르기
@@ -63,11 +64,12 @@ public class CakeStage3_1 extends CakeAnimation {
         return timingsList;
     }
 
-    private static final long GUIDE_START = 89290; // 크림 가이드 시작 (첫 번째 타이밍)
-    private static final long GUIDE_ANIMATION_START = 90993; // 반복 애니메이션 시작
-    private static final long GUIDE_END = 92500;   // ‼️ 가이드 이미지가 최종 사라지는 시점
+    private static long GUIDE_START = 89290; // 크림 가이드 시작 (첫 번째 타이밍)
+    private static long GUIDE_ANIMATION_START = 90993; // 반복 애니메이션 시작
+    private static long GUIDE_END = 92500;   // ‼️ 가이드 이미지가 최종 사라지는 시점
+    private static long bigCream_START = 94400;   // ‼️ 가이드 이미지가 최종 사라지는 시점
 
-    private static final long END_TIME = 95999; // 스테이지1 끝나는 시점
+    private static long END_TIME = 95999; // 스테이지1 끝나는 시점
 
     private static final int ANIMATION_FRAME_RATE = 150; // 애니메이션 프레임 전환 속도 (ms)
 
@@ -94,22 +96,27 @@ public class CakeStage3_1 extends CakeAnimation {
     private List<HitResult> drawnBigCreams = new ArrayList<>();
     private final int SUCCESS_WINDOW = 150; // 판정 시간 창 (ms)
 
+    private static final long TIME_OFFSET_MS = 41000L;
+
+    private final List<Long> GUIDE_TIMES_INT;
+    private final List<Long> CORRECT_TIMES_MS;
+
     // (예시) beatMap 초기화: 각 시점과 위치를 미리 정의
     public void setupBeatMap() {
         // 1번째 A: 1초 후 (X=100)
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[0], KeyEvent.VK_A, 250, 380, decoCream));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[1], KeyEvent.VK_S, 443, 430, decoCream));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[2], KeyEvent.VK_D, 636, 380, decoCream));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[3], KeyEvent.VK_F, 830, 430, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(0), KeyEvent.VK_A, 250, 380, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(1), KeyEvent.VK_S, 443, 430, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(2), KeyEvent.VK_D, 636, 380, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(3), KeyEvent.VK_F, 830, 430, decoCream));
 
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[4], KeyEvent.VK_A, 250, 480, decoCream));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[5], KeyEvent.VK_S, 443, 530, decoCream));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[6], KeyEvent.VK_D, 636, 480, decoCream));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[7], KeyEvent.VK_F, 830, 530, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(4), KeyEvent.VK_A, 250, 480, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(5), KeyEvent.VK_S, 443, 530, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(6), KeyEvent.VK_D, 636, 480, decoCream));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(7), KeyEvent.VK_F, 830, 530, decoCream));
 
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[8], KeyEvent.VK_S, 0, 0, cakeCream[0]));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[9], KeyEvent.VK_F, 0, 0, cakeCream[1]));
-        beatMap.add(new RhythmNote(USER_PRESS_TIMES_INT[10], KeyEvent.VK_F, 0, 0, cakeCream[2]));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(8), KeyEvent.VK_S, 0, 0, cakeCream[0]));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(9), KeyEvent.VK_F, 0, 0, cakeCream[1]));
+        beatMap.add(new RhythmNote(CORRECT_TIMES_MS.get(10), KeyEvent.VK_F, 0, 0, cakeCream[2]));
     }
 
     public class HitResult {
@@ -127,9 +134,35 @@ public class CakeStage3_1 extends CakeAnimation {
 
     public CakeStage3_1(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
+
+        final long finalOffset = CakeStageManager.isSurpriseStageOccurred() ? TIME_OFFSET_MS : 0;
+
+        if (CakeStageManager.isSurpriseStageOccurred()) {
+            System.out.println("🎵 Stage 1-2: 기습 스테이지 발생으로 타이밍 오프셋 -" + finalOffset + "ms 적용.");
+        } else {
+            System.out.println("🎵 Stage 1-2: 기습 스테이지 미발생. 타이밍 오프셋 미적용.");
+        }
+
+// 1. 가이드 타이밍 리스트 초기화
+        GUIDE_TIMES_INT = convertToLongArray(ORIGINAL_GUIDE_TIMES_MS).stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
+
+// 2. 정답 타이밍 리스트 초기화
+        CORRECT_TIMES_MS = convertToLongArray(USER_PRESS_TIMES_INT).stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
+
+        GUIDE_START -= finalOffset; // 크림 가이드 시작 (첫 번째 타이밍)
+        GUIDE_ANIMATION_START -= finalOffset; // 반복 애니메이션 시작
+        GUIDE_END -= finalOffset;   // ‼️ 가이드 이미지가 최종 사라지는 시점
+        bigCream_START -= finalOffset; // 큰 크림 타이밍 시작
+
+        END_TIME -= finalOffset; // 스테이지1 끝나는 시점
+
         this.controller = controller;
 
-        judgementManager = new RhythmJudgementManager(convertToLongArray(USER_PRESS_TIMES_INT), initialScoreOffset);
+        judgementManager = new RhythmJudgementManager(CORRECT_TIMES_MS, initialScoreOffset);
         setupBeatMap();
         initializeKeyTracking();
     }
@@ -152,7 +185,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= bigCream_START) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -172,7 +205,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= bigCream_START) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -192,7 +225,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= bigCream_START) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -212,7 +245,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= bigCream_START) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -317,31 +350,6 @@ public class CakeStage3_1 extends CakeAnimation {
     @Override
     protected void drawStageObjects(Graphics2D g2) {
 
-        // 🖼️ 가이드 카드병정 이미지
-        if (guideCardImage1 != null && cardImage != null) {
-            for (int i = 0; i < GUIDE_TIMES_INT.length - 1; i++) {
-                if (i % 2 == 0 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i + 1])
-                    cardImage = guideCardImage2;
-                if (i % 2 == 1 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i + 1])
-                    cardImage = guideCardImage1;
-            }
-            for (int i = 0; i < USER_PRESS_TIMES_INT.length - 1; i++) {
-                if (i % 2 == 0 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i + 1])
-                    cardImage = guideCardImage2;
-                if (i % 2 == 1 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i + 1])
-                    cardImage = guideCardImage1;
-            }
-
-            if (currentMusicTimeMs >= END_TIME) cardImage = guideCardImage1;
-
-            g2.drawImage(cardImage, 20, -30, getWidth(), getHeight(), null);
-            AffineTransform originalTransform = g2.getTransform();
-            g2.translate(getWidth(), 0);
-            g2.scale(-1.0, 1.0);
-            g2.drawImage(cardImage, 20, -30, getWidth(), getHeight(), null);
-            g2.setTransform(originalTransform);
-        }
-
         long currentTime = currentMusicTimeMs;
 
         //Image currentPipingImage = isPipingActive ? creamPiping2 : creamPiping1;
@@ -353,7 +361,7 @@ public class CakeStage3_1 extends CakeAnimation {
             if (currentTime < GUIDE_ANIMATION_START) {
                 // ‼️ 6개의 판정 가이드 이미지를 각각의 위치에 guideLights[0]으로 계속 표시
                 for (int i = 0; i < 8; i++) {
-                    long flashTime = GUIDE_TIMES_INT[i];
+                    long flashTime = GUIDE_TIMES_INT.get(i);
 
                     if (currentTime >= flashTime) {
                         int x = GUIDE_FIXED_POSITIONS[i][0];
@@ -379,7 +387,7 @@ public class CakeStage3_1 extends CakeAnimation {
 
                 for (int i = 0; i < 11; i++) {
                     if (i >= 8) {
-                        long flashTime = GUIDE_TIMES_INT[i];
+                        long flashTime = GUIDE_TIMES_INT.get(i);
                         if (currentTime < flashTime) {
                             continue;
                         }
@@ -392,7 +400,7 @@ public class CakeStage3_1 extends CakeAnimation {
                     g2.drawImage(guideKeyImage[i], x + GUIDE_LIGHT_WIDTH / 4, y + GUIDE_LIGHT_HEIGHT / 4, GUIDE_LIGHT_WIDTH - GUIDE_LIGHT_WIDTH / 2, GUIDE_LIGHT_HEIGHT - GUIDE_LIGHT_HEIGHT / 2, null);
                     g2.drawImage(animationImage, x, y, GUIDE_LIGHT_WIDTH, GUIDE_LIGHT_HEIGHT, null);
                     if (i >= 8) {
-                        long flashTime = GUIDE_TIMES_INT[i];
+                        long flashTime = GUIDE_TIMES_INT.get(i);
                         if (currentTime <= flashTime + 200)
                             g2.drawImage(guideStick, x + GUIDE_LIGHT_WIDTH, y - GUIDE_LIGHT_HEIGHT, 500, 400, null);
                     }
@@ -417,7 +425,7 @@ public class CakeStage3_1 extends CakeAnimation {
             g2.drawImage(currentPipingImage, 600, 270, 495, 405, null);
         }//550 450
 
-        if (currentTime > 94400 && currentTime <= END_TIME) {
+        if (currentTime > bigCream_START && currentTime <= END_TIME) {
             for (HitResult result : drawnBigCreams) {
                 if (result.image != null) {
                     // result 객체에 저장된 finalDrawX, finalDrawY 위치에 그립니다.
@@ -427,10 +435,35 @@ public class CakeStage3_1 extends CakeAnimation {
             g2.drawImage(currentCatImage, 650, 250, 600, 600, null);
         }
 
-
-
         // 키 입력 시 실행할 스테이지 고유의 추가 로직 제거
         // @Override
         // protected void processKeyInput(int keyCode) { ... }
+
+        // 🖼️ 가이드 카드병정 이미지
+        if (guideCardImage1 != null && cardImage != null) {
+            for (int i = 0; i < GUIDE_TIMES_INT.size() - 1 - 1; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= GUIDE_TIMES_INT.get(i) && currentMusicTimeMs <= GUIDE_TIMES_INT.get(i+1))
+                    cardImage = guideCardImage2;
+                if (i % 2 == 1 && currentMusicTimeMs >= GUIDE_TIMES_INT.get(i) && currentMusicTimeMs <= GUIDE_TIMES_INT.get(i+1))
+                    cardImage = guideCardImage1;
+            }
+            for (int i = 0; i < CORRECT_TIMES_MS.size() - 1; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= CORRECT_TIMES_MS.get(i) && currentMusicTimeMs <= CORRECT_TIMES_MS.get(i+1))
+                    cardImage = guideCardImage2;
+                if (i % 2 == 1 && currentMusicTimeMs >= CORRECT_TIMES_MS.get(i) && currentMusicTimeMs <= CORRECT_TIMES_MS.get(i+1))
+                    cardImage = guideCardImage1;
+            }
+
+            if (currentMusicTimeMs >= END_TIME) cardImage = guideCardImage1;
+
+            g2.drawImage(cardImage, 20, -30, getWidth(), getHeight(), null);
+            AffineTransform originalTransform = g2.getTransform();
+            g2.translate(getWidth(), 0);
+            g2.scale(-1.0, 1.0);
+            g2.drawImage(cardImage, 20, -30, getWidth(), getHeight(), null);
+            g2.setTransform(originalTransform);
+        }
     }
+
+
 }

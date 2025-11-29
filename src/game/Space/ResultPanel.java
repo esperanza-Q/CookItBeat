@@ -213,7 +213,12 @@ public class ResultPanel extends JPanel {
             StageManager.spaceBackgroundMusic.close();
         }
 
-        resultMusic = new Music("result_alien.mp3", false);
+        if(resultText == "Perfect RANK!"){
+            resultMusic = new Music("alien_perfectResult.mp3", false);
+        } else {
+            resultMusic = new Music("result_alien.mp3", false);
+        }
+
         resultMusic.start();
     }
 }

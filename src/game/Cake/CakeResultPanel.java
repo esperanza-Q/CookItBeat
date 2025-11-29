@@ -84,7 +84,7 @@ public class CakeResultPanel extends JPanel {
                 is.close();
             } else {
                 // fallback: Space처럼 절대경로 쓰고 싶으면 여기서 교체
-                File fontFile = new File("C:\\HYKY\\CookItBeat\\src\\fonts\\LAB디지털.ttf");
+                File fontFile = new File("C:\\Users\\SAMSUNG\\Desktop\\project_cookItBeat\\CookItBeat\\src\\fonts\\LAB디지털.ttf");
                 InputStream fis = new FileInputStream(fontFile);
                 baseFont = Font.createFont(Font.TRUETYPE_FONT, fis);
                 fis.close();
@@ -239,7 +239,11 @@ public class CakeResultPanel extends JPanel {
         CakeStageManager.stopMusic();
 
         // ✅ 결과 화면 전용 음악
-        resultMusic = new Music("result_cake.mp3", false);
+        if(resultText == "Perfect RANK!"){
+            resultMusic = new Music("cake_perfectResult.mp3", false);
+        } else {
+            resultMusic = new Music("result_cake.mp3", false);
+        }
         resultMusic.start();
     }
 }
