@@ -4,20 +4,35 @@ import game.Main; // Main 클래스의 loadImage를 사용하기 위해 임포�
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.TimerTask;
-import java.util.Timer; // java.util.Timer 사용 (클릭 후 복구 타이머)
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+// ⚠️ 참고: FONT_SIZE 임포트는 제거되었습니다.
+// import static javax.swing.text.html.CSS.Attribute.FONT_SIZE;
 
 public class SurprisePanel extends JPanel {
 
+    // ‼️ [수정] 미션 제한 시간을 10초로 변경
+    private final long MISSION_DURATION_MS = 10000; // ‼️ 10초 미션 시간
+    private final long SUCCESS_DISPLAY_DURATION = 3000; // ‼️ 3초 성공 메시지 표시
+    private Timer gameTimer; // 미션 시간 카운트다운 타이머
+    private long startTime; // 미션 시작 시간
+
+    // ‼️ 주의: CakePanel에 switchNextStageOnSuccess() 메서드를 호출해야 합니다.
     private CakePanel cakePanel;
     private Image backgroundImage;
     private Image shadowImage;
+
+    // 💡 [추가] 안내 이미지
+    private Image info_click;
 
     // 🍓 애니메이션 관련 이미지
     private Image spearImage;
     private Image strawberryImage;
 
-    // 🍓 이미지 경로 상수
+    // 🍓 이미지 경로 상수 (유지)
     private static final String BG_PATH = "../images/cakeStage_image/stage1/Background_stage1-1.png";
     private static final String SHADOW_PATH = "../images/cakeStage_image/surprise/shadow_surprise.png";
     private static final String SPEAR_01_PATH = "../images/cakeStage_image/surprise/Spear01_surprise.png";
@@ -25,20 +40,36 @@ public class SurprisePanel extends JPanel {
     private static final String STRAW_01_PATH = "../images/cakeStage_image/surprise/BigStrawberry01_surprise.png";
     private static final String STRAW_02_PATH = "../images/cakeStage_image/surprise/BigStrawberry02_surprise.png";
 
-    // 🍓 애니메이션 및 상태 변수
+    // 💡 [추가] 안내 이미지 경로
+    private static final String INFO_CLICK_PATH = "../images/cakeStage_image/cakeInfo_click.png";
+
+
+    // 🍓 애니메이션 및 상태 변수 (유지)
     private int strawberryY = -100; // 초기 Y 위치 (화면 밖)
-    private int STRAWBERRY_TARGET_Y = 150; // 동적으로 설정될 변수
-    private final int STRAWBERRY_SPEED = 2; // 떨어지는 속도
+    private int STRAWBERRY_TARGET_Y = 150;
+    private final int STRAWBERRY_SPEED = 2;
 
     private boolean isSpearClicked = false;
     private boolean isStrawberryClicked = false;
     private final long CLICK_DISPLAY_DURATION = 200; // 0.2초 동안 이미지 변경 유지
 
-    // 🍓 로드된 이미지 저장소
+    // 🍓 로드된 이미지 저장소 (유지)
     private Image spear01;
     private Image spear02;
     private Image straw01;
     private Image straw02;
+
+    // 🍓 미션 관련 상수 및 변수 (유지)
+    private final int REQUIRED_CLICKS = 20; // ‼️ 20회 클릭
+
+    private int clickCount = 0;
+    private boolean isMissionActive = true;
+
+    private String missionResultText = null; // 미션 결과를 표시할 텍스트
+
+    // 폰트 변수
+    private Font customFont;
+    private final int FONT_SIZE = 30; // ‼️ 폰트 크기를 상수로 유지
 
 
     public SurprisePanel(CakePanel panel) {
@@ -46,6 +77,7 @@ public class SurprisePanel extends JPanel {
 
         // 1. 이미지 로드 및 초기화
         loadImages();
+        loadCustomFont(); // 폰트 로드
 
         // 초기 이미지 설정
         spearImage = spear01;
@@ -55,26 +87,60 @@ public class SurprisePanel extends JPanel {
         setLayout(new GridBagLayout());
         setBackground(Color.BLACK);
 
-        // 3. 라벨 (주석 처리됨)
-//        JLabel surpriseLabel = new JLabel("기습 스테이지! 10초 후 Stage 1-2로 전환됩니다.", SwingConstants.CENTER);
-//        surpriseLabel.setFont(new Font("Arial", Font.BOLD, 40));
-//        surpriseLabel.setForeground(Color.WHITE);
-//        GridBagConstraints gbc = new GridBagConstraints();
-//        gbc.gridx = 0;
-//        gbc.gridy = 0;
-//        gbc.weighty = 0.3;
-//        gbc.anchor = GridBagConstraints.CENTER;
-//        add(surpriseLabel, gbc);
-
-        // 4. 애니메이션 타이머 시작
-        startStrawberryAnimation();
-
-        // 5. 마우스 이벤트 리스너 등록
+        // 3. 마우스 이벤트 리스너 등록
         addMouseListener(new SurpriseMouseListener());
     }
 
     // ----------------------------------------------------
-    // 🖼️ 리소스 로드 로직
+    // ‼️ [유지] 외부 호출용 타이머 시작 로직
+    // ----------------------------------------------------
+
+    public void startMissionTimer() {
+        if (!isMissionActive) return;
+
+        startTime = System.currentTimeMillis();
+
+        // 100ms 마다 타이머 업데이트
+        gameTimer = new Timer(100, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!isMissionActive) {
+                    gameTimer.stop();
+                    return;
+                }
+
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                if (elapsedTime >= MISSION_DURATION_MS) {
+                    gameTimer.stop();
+                    handleMissionFailure(); // ‼️ 10초 초과 시 실패 처리
+                } else {
+                    repaint(); // 남은 시간 표시를 위해 호출
+                }
+            }
+        });
+        gameTimer.start();
+        System.out.println("✅ 기습 스테이지 타이머가 시작되었습니다. (10초)");
+    }
+
+    // ‼️ [유지] 미션 실패 처리 (10초 시간 초과)
+    private void handleMissionFailure() {
+        if (!isMissionActive) return;
+
+        isMissionActive = false;
+        missionResultText = "GAME OVER"; // ‼️ 게임 오버 메시지 설정
+        System.out.println("🚨 미션 실패! GAME OVER.");
+
+        // ‼️ [핵심] 게임 오버 화면으로 전환 요청
+        if (cakePanel != null) {
+            // CakeStageManager.stopMusic()은 CakePanel.switchToGameOverScreen() 내부에서 호출되는 것이 일반적입니다.
+            cakePanel.switchToGameOverScreen();
+            System.out.println("🚨 게임 오버 화면으로 전환 요청 (CakePanel.switchToGameOverScreen() 호출)");
+        }
+        repaint();
+    }
+
+    // ----------------------------------------------------
+    // 🖼️ 리소스 로드 로직 (수정: info_click 이미지 추가)
     // ----------------------------------------------------
 
     public Image loadImage(String path) {
@@ -96,6 +162,8 @@ public class SurprisePanel extends JPanel {
         backgroundImage = loadImage(BG_PATH);
         shadowImage = loadImage(SHADOW_PATH);
 
+        info_click = loadImage(INFO_CLICK_PATH); // 💡 [추가] 안내 이미지 로드
+
         spear01 = loadImage(SPEAR_01_PATH);
         spear02 = loadImage(SPEAR_02_PATH);
         straw01 = loadImage(STRAW_01_PATH);
@@ -107,90 +175,104 @@ public class SurprisePanel extends JPanel {
     }
 
     // ----------------------------------------------------
-    // 🍓 애니메이션 로직
+    // 폰트 로드 로직 (유지)
     // ----------------------------------------------------
 
-    private void startStrawberryAnimation() {
-        // ‼️ [목표 Y 계산] 딸기가 그림자 위에 멈추도록 목표 Y 좌표를 계산
-        if (strawberryImage != null && shadowImage != null) {
-            int shadowH = shadowImage.getHeight(this);
-            int strawH = strawberryImage.getHeight(this);
-            int panelH = getHeight(); // 이 값은 초기에는 0일 수 있습니다.
+    private void loadCustomFont() {
+        // 1. 기본 폰트 설정 (대체 폰트)
+        customFont = new Font("Arial", Font.BOLD, FONT_SIZE);
 
-            // 안전한 계산을 위해 충분한 높이가 확보되었을 때만 계산합니다.
-            if (panelH > 0 && panelH > strawH + shadowH) {
-                // 패널 바닥 - 그림자 높이 - 딸기 높이
-                STRAWBERRY_TARGET_Y = panelH - shadowH - strawH;
-            } else {
-                STRAWBERRY_TARGET_Y = 400; // 임시 값
+        // 2. 커스텀 폰트 로드 시도
+        try {
+            // ⚠️ 파일 경로를 프로젝트 구조에 맞게 수정하세요.
+            File fontFile = new File("src/fonts/LAB디지털.ttf");
+
+            // InputStream을 사용하여 로드
+            try (InputStream is = new FileInputStream(fontFile)) {
+                Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);
+
+                // 원하는 크기로 파생시켜 최종 폰트 객체에 저장
+                // ‼️ 미션 제목이 더 커야 하므로, FONT_SIZE보다 큰 폰트를 미리 파생시켜 둡니다.
+                Font titleBaseFont = baseFont.deriveFont(Font.BOLD, 40f);
+                customFont = baseFont.deriveFont(Font.BOLD, (float)FONT_SIZE);
+                System.out.println("✅ 커스텀 폰트 로드 성공.");
             }
-        } else {
-            STRAWBERRY_TARGET_Y = 400;
+
+        } catch (IOException | FontFormatException e) {
+            // 로드 실패 시
+            System.err.println("❌ 폰트 로드 실패. Arial 기본 폰트를 사용합니다.");
         }
-
-        // javax.swing.Timer를 사용하여 15ms마다 액션 수행 (EDT 안전)
-        new javax.swing.Timer(15, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // 딸기 위치 업데이트 (떨어지는 속도)
-                if (strawberryY < STRAWBERRY_TARGET_Y) {
-                    strawberryY += STRAWBERRY_SPEED;
-                    if (strawberryY > STRAWBERRY_TARGET_Y) {
-                        strawberryY = STRAWBERRY_TARGET_Y;
-
-                        // 목표 지점에 도달하면 타이머를 멈춥니다.
-                        ((javax.swing.Timer) e.getSource()).stop();
-                    }
-                }
-                repaint(); // 다시 그리기를 요청하여 애니메이션 효과 구현
-            }
-        }).start();
     }
 
     // ----------------------------------------------------
-    // 🐭 내부 마우스 리스너 (클릭 처리)
+    // 🐭 내부 마우스 리스너 (클릭 처리) - (로직 변경 없음)
     // ----------------------------------------------------
-
     private class SurpriseMouseListener extends MouseAdapter {
+        // ... (이전 코드와 동일하므로 생략) ...
 
         @Override
         public void mousePressed(MouseEvent e) {
 
+            if (!isMissionActive) {
+                return;
+            }
+
             Point clickPoint = e.getPoint();
 
-            // ‼️ [Spear 클릭 영역]
             int spearW = spearImage.getWidth(SurprisePanel.this);
             int spearH = spearImage.getHeight(SurprisePanel.this);
             int spearX = (getWidth() - spearW) / 2;
             int spearY = getHeight() / 2 - 50;
             Rectangle spearBounds = new Rectangle(spearX, spearY, spearW, spearH);
 
-            // ‼️ [Strawberry 클릭 영역]
             int strawW = strawberryImage.getWidth(SurprisePanel.this);
             int strawH = strawberryImage.getHeight(SurprisePanel.this);
             Rectangle strawBounds = new Rectangle(getWidth()/2 - strawW/2, strawberryY, strawW, strawH);
 
             boolean imageChanged = false;
 
-            // 1. Spear 클릭 처리
             if (spearBounds.contains(clickPoint) && !isSpearClicked) {
                 spearImage = spear02;
                 isSpearClicked = true;
                 imageChanged = true;
             }
 
-            // 2. Strawberry 클릭 처리
             if (strawBounds.contains(clickPoint) && !isStrawberryClicked) {
+                clickCount++;
+                System.out.println("Click! Count: " + clickCount);
+
                 strawberryImage = straw02;
                 isStrawberryClicked = true;
                 imageChanged = true;
+
+                if (clickCount >= REQUIRED_CLICKS) {
+                    if (!isMissionActive) return;
+
+                    isMissionActive = false;
+                    if (gameTimer != null) gameTimer.stop();
+
+                    missionResultText = "Success!";
+                    repaint();
+
+                    new javax.swing.Timer((int)SUCCESS_DISPLAY_DURATION, new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent evt) {
+                            missionResultText = null;
+                            repaint();
+                            ((javax.swing.Timer)evt.getSource()).stop();
+
+                            if (cakePanel != null) {
+                                cakePanel.switchNextStageOnSuccess();
+                                System.out.println("✅ 미션 성공! CakePanel에 다음 스테이지 전환 요청.");
+                            }
+                        }
+                    }).start();
+                }
             }
 
-            // 3. 이미지 변경 후 복구 타이머 시작
             if (imageChanged) {
                 repaint();
 
-                // javax.swing.Timer를 사용하여 짧은 시간 후 원래대로 복구
                 new javax.swing.Timer((int)CLICK_DISPLAY_DURATION, new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent evt) {
@@ -209,14 +291,15 @@ public class SurprisePanel extends JPanel {
             }
         }
 
+
         @Override
         public void mouseReleased(MouseEvent e) {
-            // 현재는 추가 로직 없음
         }
     }
 
+
     // ----------------------------------------------------
-    // 🎨 그리기 로직
+    // 🎨 그리기 로직 (수정: 타이틀 텍스트 및 이미지 추가)
     // ----------------------------------------------------
 
     @Override
@@ -224,27 +307,81 @@ public class SurprisePanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        // 1. 배경 이미지 그리기
-        if (backgroundImage != null) {
-            g2.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
-        } else {
-            g2.setColor(getBackground());
-            g2.fillRect(0, 0, getWidth(), getHeight());
+        // 1. 배경/그림자/딸기/창 이미지 그리기 (순서 유지)
+        if (backgroundImage != null) { g2.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this); }
+        if (shadowImage != null)     { g2.drawImage(shadowImage, 0, 0, getWidth(), getHeight(), this); }
+        if (strawberryImage != null) { g2.drawImage(strawberryImage, 0, 0, getWidth(), getHeight(), this); }
+        if (spearImage != null)      { g2.drawImage(spearImage, 0, 0, getWidth(), getHeight(), this); }
+
+        // ----------------------------------------------------
+        // 2. 💡 [추가] 오른쪽 상단 타이틀 및 안내 이미지
+        // ----------------------------------------------------
+        if (isMissionActive) {
+
+            // 타이틀 폰트 설정 (기본 FONT_SIZE 30보다 크게)
+            g2.setFont(customFont.deriveFont(Font.BOLD, 40f));
+            g2.setColor(Color.WHITE); // 눈에 잘 띄도록 흰색 사용
+
+            String titleText1 = "대왕딸기 습격!!!!";
+            String titleText2 = "10초 안에 대왕 딸기를 부수세요!";
+
+            int margin = 20;
+            int textY1 = margin + g2.getFontMetrics().getHeight();
+            int textY2 = textY1 + g2.getFontMetrics().getHeight();
+
+            // 텍스트 오른쪽 정렬을 위한 X 좌표 계산
+            int textX1 = getWidth() - margin - g2.getFontMetrics().stringWidth(titleText1);
+            int textX2 = getWidth() - margin - g2.getFontMetrics().stringWidth(titleText2);
+
+            g2.drawString(titleText1, textX1, textY1);
+            g2.drawString(titleText2, textX2, textY2);
+
+            // 안내 이미지 표시 (텍스트 아래)
+            if (info_click != null) {
+                int infoW = info_click.getWidth(this);
+                int infoH = info_click.getHeight(this);
+
+                // 이미지 오른쪽 정렬
+                int infoX = getWidth() - margin - infoW;
+                int infoY = textY2 + margin;
+
+                g2.drawImage(info_click, infoX, infoY, infoW, infoH, this);
+            }
         }
 
-        // 2. 그림자 이미지 그리기 (바닥 중앙)
-        if (shadowImage != null) {
-            g2.drawImage(shadowImage, 0, 0, getWidth(), getHeight(), this);
-        }
+        // ----------------------------------------------------
+        // 3. 미션 카운트 및 결과 표시
+        // ----------------------------------------------------
 
-        // 3. Spear 이미지 그리기 (화면 중앙 근처 고정)
-        if (spearImage != null) {
-            g2.drawImage(spearImage, 0, 0, getWidth(), getHeight(), this);
-        }
+        // 미션 정보 표시 폰트 설정 (기본 FONT_SIZE 30)
+        g2.setFont(customFont.deriveFont(Font.BOLD, (float)FONT_SIZE));
 
-        // 4. Strawberry 이미지 그리기 (애니메이션 위치)
-        if (strawberryImage != null) {
-            g2.drawImage(strawberryImage, 0, 0, getWidth(), getHeight(), this);
+        if (isMissionActive) {
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            long remainingTime = MISSION_DURATION_MS - elapsedTime;
+            String timeStatus = remainingTime > 0 ? String.format("%.1f", remainingTime / 1000.0) : "0.0";
+
+            // 미션 카운트 표시
+            String status = String.format("Click : %d / %d  |  Time : %s초", clickCount, REQUIRED_CLICKS, timeStatus);
+            g2.setColor(Color.YELLOW);
+
+            int textX = (getWidth() - g2.getFontMetrics().stringWidth(status)) / 2;
+            int textY = getHeight() - 50;
+            g2.drawString(status, textX, textY);
+
+        } else if (missionResultText != null) {
+            // 미션 종료 후 결과 표시
+            g2.setFont(customFont.deriveFont(Font.BOLD, 50f)); // 결과 메시지는 더 크게
+
+            if (missionResultText.equals("Success!")) {
+                g2.setColor(Color.GREEN);
+            } else if (missionResultText.equals("GAME OVER")) {
+                g2.setColor(Color.RED);
+            }
+
+            int textX = (getWidth() - g2.getFontMetrics().stringWidth(missionResultText)) / 2;
+            int textY = getHeight() / 2 + 100; // 중앙보다 조금 아래
+            g2.drawString(missionResultText, textX, textY);
         }
     }
 }

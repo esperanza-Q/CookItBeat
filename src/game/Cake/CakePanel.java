@@ -8,8 +8,10 @@ import java.awt.*;
 
 public class CakePanel extends JPanel implements Runnable {
 
-    // ⚠️ 주의: 실제 프로젝트에서는 GameFrame, CakeStage1_2, CakeStage2, CakeStage3_1, CakeStage3_2
-    // 클래스들이 프로젝트에 정의되어 있어야 합니다.
+    // ⚠️ 주의: CakeStage1_2, CakeStage2, CakeStage3_1, CakeStage3_2, CakeStage2_oven, CakeResultPanel, CakeStage1_1
+    // 클래스들을 모두 프로젝트에 정의해야 합니다.
+
+    private GameOverPanel gameOverPanel;
 
     private GameFrame gameFrame;
     private CardLayout cardLayout = new CardLayout();
@@ -31,8 +33,6 @@ public class CakePanel extends JPanel implements Runnable {
 
     // 💡 [추가] 기습 스테이지 관련 필드
     private static final String SURPRISE_NAME = "SurpriseStage";
-    private static final int SURPRISE_DURATION_MS = 10000; // 10초 대기
-    private long surpriseStartTime = 0;
     private boolean isSurpriseActive = false;
 
 
@@ -68,27 +68,16 @@ public class CakePanel extends JPanel implements Runnable {
         // 3. Stage Panel 인스턴스 생성 및 CardLayout에 추가
         // Stage 1-1
         CakeStageData stage1_1Data = CakeStageManager.stageDataList.get(0);
+        // ⚠️ CakeStage1_1 클래스가 정의되어 있어야 합니다.
         CakeStage1_1 stage1_1 = new CakeStage1_1(this, stage1_1Data, initialScoreOffset);
         stage1_1.setName(STAGE1_1_NAME);
         add(stage1_1, STAGE1_1_NAME);
 
-        // 💡 [추가] 기습 스테이지 패널 추가 (더미 가정)
-//        JPanel surprisePanel = new JPanel();
-//        surprisePanel.setBackground(Color.RED);
-//        JLabel surpriseLabel = new JLabel("기습 스테이지! 10초 후 Stage 1-2로 전환됩니다.", SwingConstants.CENTER);
-//        surpriseLabel.setFont(new Font("Arial", Font.BOLD, 40));
-//        surpriseLabel.setForeground(Color.WHITE);
-//        surprisePanel.setLayout(new GridBagLayout());
-//        surprisePanel.add(surpriseLabel);
-//        surprisePanel.setName(SURPRISE_NAME);
-//        add(surprisePanel, SURPRISE_NAME);
-        // 💡 [수정] 기습 스테이지 패널 추가 (별도의 클래스 파일 사용)
-        SurprisePanel surprisePanel = new SurprisePanel(this); // ‼️ 새로 만든 클래스 사용
+        // 💡 [수정] 기습 스테이지 패널 추가 (SurprisePanel 클래스 사용)
+        SurprisePanel surprisePanel = new SurprisePanel(this);
         surprisePanel.setName(SURPRISE_NAME);
         add(surprisePanel, SURPRISE_NAME);
 
-
-        // 나머지 스테이지는 필요 시 다음 로직에서 생성됨 (switchToNextStagePanel 참조)
 
         // 4. 현재 스테이지 설정 및 표시
         currentStagePanel = stage1_1;
@@ -136,7 +125,7 @@ public class CakePanel extends JPanel implements Runnable {
                 if (currentStagePanel != null) {
                     currentStagePanel.repaint();
                 } else {
-                    // 기습 스테이지 (JPanel)가 표시 중일 때 repaint
+                    // 기습 스테이지 (JPanel 또는 GameOverPanel)가 표시 중일 때 repaint
                     repaint();
                 }
                 delta--;
@@ -166,6 +155,7 @@ public class CakePanel extends JPanel implements Runnable {
         }
 
         if (resultPanel == null) {
+            // ⚠️ CakeResultPanel 클래스가 정의되어 있어야 합니다.
             resultPanel = new CakeResultPanel(this);
             resultPanel.setName(RESULT_NAME);
             add(resultPanel, RESULT_NAME);
@@ -183,32 +173,15 @@ public class CakePanel extends JPanel implements Runnable {
     private void updateGameLogic() {
         Music music = CakeStageManager.getMusic();
 
-        // ‼️ [수정] 기습 스테이지가 아닐 때만 Stage Logic 업데이트
+        // ‼️ [수정] 기습 스테이지가 활성화된 동안은 Stage Logic 업데이트를 건너뜁니다.
         if (currentStagePanel != null && !isSurpriseActive) {
             currentStagePanel.updateStageLogic();
         }
 
-        // 1. 🚨 기습 스테이지 대기 시간 체크 및 전환 로직
+        // 1. 🚨 기습 스테이지 강제 전환 로직 제거
         if (isSurpriseActive) {
-            long currentTime = System.currentTimeMillis();
-
-            if (currentTime >= surpriseStartTime + SURPRISE_DURATION_MS) {
-                // 10초 경과: Stage 1-2로 전환
-                isSurpriseActive = false;
-
-                int totalScore = CakeStageManager.getCumulativeScore();
-                System.out.println("✅ 기습 스테이지 종료. Stage 1-2로 전환 시작.");
-
-                // ‼️ Stage 1-2로 전환 및 음악 로드 로직 실행
-
-                // CakeStageManager에서 다음 스테이지 인덱스(2)로 이동시키는 로직 수행
-                if(CakeStageManager.nextStage()) {
-                    switchToNextStagePanel(STAGE1_2_NAME, totalScore);
-                } else {
-                    finishToResult();
-                }
-            }
-            return; // 기습 스테이지가 활성화된 동안은 아래 음악/스테이지 종료 시간 체크를 건너뜀
+            // ‼️ SurprisePanel에서 미션 성공/실패가 확정될 때까지 대기합니다.
+            return;
         }
 
         // ‼️ 기습 스테이지 활성 상태가 아닐 때만 음악 시간 체크
@@ -220,7 +193,6 @@ public class CakePanel extends JPanel implements Runnable {
         // ✅ 2) 정상적으로 endTime 도달한 경우
         if (stageEndTime != -1 && currentMusicTime >= stageEndTime) {
 
-            // 💡 [수정] totalScore를 여기서 선언하여 아래의 모든 블록에서 사용 가능하게 함
             int totalScore = CakeStageManager.getCumulativeScore();
 
             // 🚨 Stage 1-1 종료 시점 처리
@@ -229,18 +201,23 @@ public class CakePanel extends JPanel implements Runnable {
                 CakeStageManager.checkSurpriseStage();
 
                 if (CakeStageManager.isSurpriseStageOccurred()) {
-                    // ‼️ [수정] 기습 스테이지 발생 시에만 음악을 중단하고 null로 설정
+                    // ‼️ 기습 스테이지 발생 시 Stage 1-1 음악 중단
                     CakeStageManager.stopMusic();
                     backgroundMusic = null;
 
                     // ‼️ 기습 스테이지 활성화 로직
                     isSurpriseActive = true;
-                    surpriseStartTime = System.currentTimeMillis();
 
                     cardLayout.show(this, SURPRISE_NAME);
                     currentStagePanel = null;
 
-                    System.out.println("🚨 기습 스테이지 활성화. 10초 대기 시작.");
+                    // ‼️ SurprisePanel에 타이머 시작 요청
+                    SurprisePanel surprisePanel = (SurprisePanel) getComponentByName(SURPRISE_NAME);
+                    if (surprisePanel != null) {
+                        surprisePanel.startMissionTimer();
+                    }
+
+                    System.out.println("🚨 기습 스테이지 활성화. 미션 타이머 시작 요청.");
                     return;
                 }
                 // ‼️ [핵심 변경] 기습 미발생 시, 음악 중단 및 null 설정 없이 아래로 진행
@@ -280,13 +257,12 @@ public class CakePanel extends JPanel implements Runnable {
                 // 4-1. 마지막 스테이지인 경우: 게임 종료
                 finishToResult();
             } else {
-                // ‼️ [핵심 복구] 4-2. 중간 스테이지인 경우: 다음 스테이지로 강제 전환 (Stage 1-2 -> Stage 2)
+                // 4-2. 중간 스테이지인 경우: 다음 스테이지로 강제 전환
                 int totalScore = CakeStageManager.getCumulativeScore();
                 if (CakeStageManager.nextStage()) {
                     int nextStageIndex = CakeStageManager.getCurrentStage();
                     String nextStageCardName = "";
 
-                    // 현재 스테이지가 Stage 1-2(2)였고 다음 스테이지(3)로 넘어갈 때
                     if (nextStageIndex == 3) nextStageCardName = STAGE2_NAME;
                     else if (nextStageIndex == 4) nextStageCardName = STAGE2_OVEN_NAME;
                     else if (nextStageIndex == 5) nextStageCardName = STAGE3_1_NAME;
@@ -350,17 +326,21 @@ public class CakePanel extends JPanel implements Runnable {
             CakeStageData stageData = CakeStageManager.getCurrentStageData();
 
             if (cardName.equals(STAGE1_2_NAME)) {
-                // ‼️ [수정] Stage 1-2 생성 로직 활성화
+                // ⚠️ CakeStage1_2 클래스가 정의되어 있어야 합니다.
                 nextStage = new CakeStage1_2(this, stageData, totalScore);
             }
             else if (cardName.equals(STAGE2_NAME)) {
-                 nextStage = new CakeStage2(this, stageData, totalScore);
+                // ⚠️ CakeStage2 클래스가 정의되어 있어야 합니다.
+                nextStage = new CakeStage2(this, stageData, totalScore);
             } else if (cardName.equals(STAGE2_OVEN_NAME)) {
-                 nextStage = new CakeStage2_oven(this, stageData, totalScore);
+                // ⚠️ CakeStage2_oven 클래스가 정의되어 있어야 합니다.
+                nextStage = new CakeStage2_oven(this, stageData, totalScore);
             } else if (cardName.equals(STAGE3_1_NAME)) {
-                 nextStage = new CakeStage3_1(this, stageData, totalScore);
+                // ⚠️ CakeStage3_1 클래스가 정의되어 있어야 합니다.
+                nextStage = new CakeStage3_1(this, stageData, totalScore);
             } else if (cardName.equals(STAGE3_2_NAME)) {
-                 nextStage = new CakeStage3_2(this, stageData, totalScore);
+                // ⚠️ CakeStage3_2 클래스가 정의되어 있어야 합니다.
+                nextStage = new CakeStage3_2(this, stageData, totalScore);
             }
 
             if (nextStage != null) {
@@ -387,5 +367,54 @@ public class CakePanel extends JPanel implements Runnable {
         if (gameThread != null) {
             gameThread.interrupt();
         }
+    }
+
+    // ----------------------------------------------------
+    // ‼️ [핵심 추가] SurprisePanel에서 미션 실패 시 호출됨 (GAME OVER)
+    // ----------------------------------------------------
+    public void switchToGameOverScreen() {
+        isSurpriseActive = false; // 플래그 즉시 해제
+
+        if (gameOverPanel == null) {
+            // ⚠️ GameOverPanel 클래스가 정의되어 있어야 합니다.
+            gameOverPanel = new GameOverPanel(this);
+            this.add(gameOverPanel, "GameOver"); // "GameOver"는 CardLayout의 이름입니다.
+        }
+
+        CardLayout cl = (CardLayout) this.getLayout();
+        cl.show(this, "GameOver"); // GameOverPanel로 화면 전환
+        System.out.println("🚨 미션 실패! GameOverPanel로 전환되었습니다.");
+    }
+
+    // ----------------------------------------------------
+    // ‼️ [핵심 추가] SurprisePanel에서 미션 성공 시 호출됨 (다음 스테이지로)
+    // ----------------------------------------------------
+    public void switchNextStageOnSuccess() {
+        isSurpriseActive = false; // 플래그 즉시 해제
+
+        // 음악 정지 및 재시작 로직 (SurprisePanel에서 CakeStageManager.stopMusic()을 호출했지만,
+        // CakePanel의 backgroundMusic 필드도 null 처리해야 다음 스테이지 음악 로드 시 중복 방지)
+        CakeStageManager.stopMusic();
+        backgroundMusic = null;
+
+        int totalScore = CakeStageManager.getCumulativeScore();
+        System.out.println("✅ 기습 스테이지 미션 성공. Stage 1-2로 전환 시작.");
+
+        // Stage 1-2로 전환 로직 실행
+        if(CakeStageManager.nextStage()) {
+            switchToNextStagePanel(STAGE1_2_NAME, totalScore);
+        } else {
+            finishToResult();
+        }
+    }
+
+    // ‼️ [추가] getComponentByName 헬퍼 함수
+    private Component getComponentByName(String name) {
+        for (Component comp : getComponents()) {
+            if (name.equals(comp.getName())) {
+                return comp;
+            }
+        }
+        return null;
     }
 }
