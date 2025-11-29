@@ -45,7 +45,7 @@ public class SpaceStage3 extends SpaceAnimation {
 
     public static final int SLEEP_TIME = 10;
     private final int FIXED_START_Y = -300; // 모든 재료의 초기 Y 좌표 (화면 밖)
-    private final int JUDGEMENT_TARGET_Y = 50; // 판정선 Y 좌표
+    private final int JUDGEMENT_TARGET_Y = 150; // 판정선 Y 좌표
 
     ArrayList<Material> matList = new ArrayList<Material>();
 
@@ -60,6 +60,9 @@ public class SpaceStage3 extends SpaceAnimation {
     // ✅ [추가] 외계인 손 현재 이미지
     private Image currentAlien;
 
+    private static int offset = 500;
+
+    private static int click = 0;
 
     // ✅ [추가] 레이저 애니메이션 관련 변수
     public static Image currentLaserImage = null;
@@ -76,6 +79,20 @@ public class SpaceStage3 extends SpaceAnimation {
     private float boomScale = 1.8f;   // 70% 크기
     private int boomDrawX = -1;
     private int boomDrawY = -1;
+
+    private Timer trashAnimationTimer;
+    private int trashFrameIndex = 0;
+    private Image currentTrashImage; // 현재 잔해 애니메이션 프레임 이미지
+    private final int TRASH_ANIMATION_DELAY = 150; // 예시 딜레이 (ms)
+    // 잔해 이미지 크기 조절 (1.0f = 원본 크기)
+    private float trashScale = 1.0f;
+    private int trash1DrawX = 0;
+    private int trash1DrawY = 0;
+
+    private int trash2DrawX = 0;
+    private int trash2DrawY = 0;
+
+    private final double DIFFICULTY_FACTOR = 0.5; // 난이도 조절 계수 (0.5 = 50% 속도)
 
     // 이벤트 발동 여부
     private boolean event1Triggered = false;
@@ -136,15 +153,32 @@ public class SpaceStage3 extends SpaceAnimation {
     private final int[] ALIEN_RELEASE_TIMES;
 
     // ✅ [추가] 수프 멈춤/재개 타이밍 상수
-    private final int SOUP_STOP_TIME = toJudgeMs(72500);   // 72.5초에 정지 조건 활성화
-    private final int SOUP_RESUME_TIME = toJudgeMs(75500); // 75.5초에 재개
+    private final long SOUP_STOP_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[8] - 500;   // 72.5초에 정지 조건 활성화
+    private final long SOUP_RESUME_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[19] + 50; // 75.5초에 재개
+
+    private final long trashStartTime = toJudgeMs(67265);
 
     // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
     private static long[] convertToLongArray(int[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < array.length; i++) {
-            result[i] = array[i];
+            result[i] = array[i] + offset;
         }
+
+        result[0] = result[0] + 450 - 100;
+        result[1] = result[1] + 450 - 100;
+        result[2] = result[2] + 450 - 100;
+
+        result[3] = result[3] - 400;
+        result[4] = result[4] - 400;
+        result[5] = result[5] - 400;
+        result[6] = result[6] - 50 - 400;
+        result[7] = result[7] - 50 - 400;
+        for (int i = 8; i < 20; i++) {
+            result[i] = result[i] - 180;
+        }
+        result[20] = result[20] - 477;
+
         return result;
     }
 
@@ -152,6 +186,12 @@ public class SpaceStage3 extends SpaceAnimation {
         // 1. super() 호출을 첫 줄로 배치하고, static 헬퍼 메서드를 통해 인자를 준비합니다.
         // ‼️ 판정 타이밍 배열(USER_PRESS_TIMES_INT)을 부모 클래스에 전달합니다.
         super(convertToLongArray(USER_PRESS_TIMES_INT));
+
+        // ‼️ [추가] 마우스 이벤트 수신을 위해 포커스 가능 설정
+        this.setFocusable(true);
+        this.requestFocusInWindow(); // 윈도우 포커스 요청
+
+        GLOBAL_JUDGEMENT_OFFSET_MS = 0;
 
         // 2. 인스턴스 변수인 ALIEN_RELEASE_TIMES 초기화 (super() 호출 후 가능)
         ALIEN_RELEASE_TIMES = new int[ALIEN_PRESS_TIMES_INT.length];
@@ -178,29 +218,51 @@ public class SpaceStage3 extends SpaceAnimation {
         // ‼️ 외계인 손은 초기엔 alien1 또는 null로 설정 (화면에 표시 여부는 processStageEvents에서 제어)
         currentAlien = null; // 초기에는 보이지 않도록 null로 설정
 
-        // ✅ [추가] 물총 애니메이션 타이머 설정
+        // ✅ [추가] 레이저 애니메이션 타이머 설정
         setupLaserAnimationTimer();
 
         setupBoomAnimationTimer();
 
+        // 도착시간, 재료타입, x속도, y속도, x도착좌표, y도착좌표
+        dropMats(USER_PRESS_TIMES_INT[0] + offset + 500, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
+        dropMats(USER_PRESS_TIMES_INT[1] + offset + 500, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
+        dropMats(USER_PRESS_TIMES_INT[2] + offset + 500, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
+
+        dropMats(USER_PRESS_TIMES_INT[3] + offset, materialNames[random.nextInt(3)], -2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 700);
+        dropMats(USER_PRESS_TIMES_INT[4] + offset, materialNames[random.nextInt(3)], 0, 3.6 * DIFFICULTY_FACTOR, 530);
+        dropMats(USER_PRESS_TIMES_INT[5] + offset, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
+        dropMats(USER_PRESS_TIMES_INT[6] + offset - 50, materialNames[random.nextInt(3)], 0.9 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 430);
+        dropMats(USER_PRESS_TIMES_INT[7] + offset - 50, materialNames[random.nextInt(3)], -0.9 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 630);
+
+        dropMats(USER_PRESS_TIMES_INT[8] + offset - 250, "soup", 0, 4, 530);
+
+        dropMats(USER_PRESS_TIMES_INT[20] + offset, "egg", 0, 4 * DIFFICULTY_FACTOR, 530);
 
         // ✅ [추가] 스테이지3 이벤트 처리
         addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
+            public void mousePressed(MouseEvent e) {
                 int clickX = e.getX();
                 int clickY = e.getY();
-
-                int materialIndex = -1;
 
                 // 충돌 판정 루프
                 for (int i = 0; i < matList.size(); i++) {
                     Material mat = matList.get(i);
 
                     if (mat.getBounds().contains(clickX, clickY)) {
-                        Music.playEffect("laser02.mp3");
+                        new SwingWorker<Void, Void>() {
+                            @Override
+                            protected Void doInBackground() throws Exception {
+                                // 백그라운드 스레드에서 실행
+                                Music.playEffect("laser02.mp3"); // 🎵 I/O 작업 분리
+                                processSpaceKeyPressLogic();     // 🎮 무거운 게임 로직 분리
 
-                        processSpaceKeyPressLogic(); // 판정 로직
+                                // createAndDropFragments(mat, clickX); // 🧩 객체 생성/초기화 작업 분리
+                                // **주의:** GUI 객체(mat)의 상태를 변경하는 작업은 doInBackground에서 직접 하지 마세요.
+
+                                return null;
+                            }
+                        }.execute();
 
                         // 1. 레이저 이미지 설정 요청 (인덱스 기반) -> 클릭 좌표 기반으로 수정
                         updateLaserFramesByClickX(clickX);
@@ -212,14 +274,12 @@ public class SpaceStage3 extends SpaceAnimation {
                             boolean shouldExplode = true; // 기본적으로 폭발
 
                             // ⭐️ [수정] 수프 재료 특수 로직: 정지 상태이고, 5회 미만 클릭일 때
-                            if (mat.isSoup && mat.isStopped ) {
+                            if (mat.isSoup && mat.isStopped) {
                                 mat.currentHits++; // 성공 횟수 증가
-
-                                if (mat.currentHits < mat.REQUIRED_HITS) {
-                                    // 5회 미만이면 폭발하지 않고 카운트만 증가
-                                    shouldExplode = false;
-                                }
+                                shouldExplode = false;
                             }
+
+                            if (mat.isEgg) mat.imageToDraw = mat.eggImage2;
 
                             if (shouldExplode) {
                                 boomDrawX = clickX;
@@ -248,24 +308,6 @@ public class SpaceStage3 extends SpaceAnimation {
             updateMaterialPositions();
         });
 
-        gameTimer.start();
-
-        // 정답타이밍, 재료타입, x속도, y속도, x도착좌표, y도착좌표
-        dropMats(USER_PRESS_TIMES_INT[0], materialNames[random.nextInt(3)], 2.7, 3.6, 400);
-        dropMats(USER_PRESS_TIMES_INT[1], materialNames[random.nextInt(3)], 0, 3.6, 530);
-        dropMats(USER_PRESS_TIMES_INT[2], materialNames[random.nextInt(3)], -2.7, 3.6, 700);
-
-        dropMats(USER_PRESS_TIMES_INT[3], materialNames[random.nextInt(3)], -2.7, 3.6, 700);
-        dropMats(USER_PRESS_TIMES_INT[4], materialNames[random.nextInt(3)], 0, 3.6, 530);
-        dropMats(USER_PRESS_TIMES_INT[5], materialNames[random.nextInt(3)], 2.7, 3.6, 400);
-        dropMats(USER_PRESS_TIMES_INT[6], materialNames[random.nextInt(3)], 0.9, 3.6, 430);
-        dropMats(USER_PRESS_TIMES_INT[7], materialNames[random.nextInt(3)], -0.9, 3.6, 630);
-
-        dropMats(USER_PRESS_TIMES_INT[8], "soup", 0, 4, 530);
-
-        dropMats(USER_PRESS_TIMES_INT[20], "egg", 0, 4, 530);
-
-        // 타이머 시작
         gameTimer.start();
 
     }
@@ -363,6 +405,26 @@ public class SpaceStage3 extends SpaceAnimation {
             boomAnimationTimer.stop();
         }
         boomAnimationTimer.start();
+    }
+
+    private void setupTrashAnimationTimer() {
+        trashAnimationTimer = new Timer(TRASH_ANIMATION_DELAY, e -> {
+            trashFrameIndex++;
+
+            if (trashFrameIndex < TrashFrames1.length) {
+                currentTrashImage = TrashFrames1[trashFrameIndex];
+            } else {
+                // 애니메이션 종료 후 이미지 null로 설정
+                trashAnimationTimer.stop();
+                //currentTrashImage = null; -> 마우스 클릭 많이하면 사라지게
+
+                // ⭐️ [추가] 애니메이션 종료 후 그리기 위치 초기화
+                //trash1DrawX = -1;
+                //trash1DrawY = -1;
+            }
+            repaint();
+        });
+        trashAnimationTimer.setRepeats(true);
     }
 
     // ======== 🔹 슬로우 구간 정보 (ms단위)
@@ -504,7 +566,7 @@ public class SpaceStage3 extends SpaceAnimation {
 
     // answerTimeMs : 정답 타이밍
     public void dropMats(long answerTimeMs, String matType, double speedX, double speedY, int destX) {
-
+        /*
         // 1. 초기 좌표와 출발 시간 계산
         SpeedResult result = calculateInitialAndTime(answerTimeMs, speedX, speedY, destX);
         double startX = result.getNewSpeedX();
@@ -514,6 +576,33 @@ public class SpaceStage3 extends SpaceAnimation {
         Material newMat = new Material(startX, FIXED_START_Y, matType, speedX, speedY, answerTimeMs, dropStartTime);
 
         // 3. 리스트에 추가
+        matList.add(newMat);
+
+        */
+        // 1. 이동 거리 계산 (Y축)
+        double distanceY = JUDGEMENT_TARGET_Y - FIXED_START_Y;
+
+        // 2. ⭐️ [수정 핵심] 속도를 '픽셀/ms' 단위로 변환합니다.
+        double speedY_ms = speedY / (double) SLEEP_TIME;
+        double speedX_ms = speedX / (double) SLEEP_TIME;
+
+        // 3. ⭐️ 이동 시간 (ms) 계산
+        // travelTimeMs = distanceY (px) / speedY_ms (px/ms)
+        long travelTimeMs = (long) (distanceY / speedY_ms); // 틱을 사용하지 않고 순수 ms로 계산
+
+        // 4. 드롭 시작 시간 계산 (Start = Answer Time - Travel Time)
+        long dropStartTime = answerTimeMs - travelTimeMs;
+
+        // 5. X축 이동 거리 계산 (travelTimeMs 사용)
+        double distanceX = speedX_ms * travelTimeMs; // 픽셀/ms * ms
+
+        // 6. 초기 X 좌표 계산
+        double startX = destX - distanceX;
+
+        // 7. Material 객체 생성 (이때 speedX, speedY는 여전히 '픽셀/틱' 단위여야 합니다.
+        //    Material은 이 속도를 updateMaterialPositions에서 사용하기 때문입니다.)
+        Material newMat = new Material(startX, FIXED_START_Y, matType, speedX, speedY, answerTimeMs, dropStartTime);
+
         matList.add(newMat);
     }
 
@@ -575,26 +664,64 @@ public class SpaceStage3 extends SpaceAnimation {
             if (mat.isSoup) {
                 //System.out.println(수프정지);
                 // 1. 정지 조건: 72.5초가 지났고, Y좌표가 150에 도달했을 때
-                if (!mat.isStopped && progressTime >= SOUP_STOP_TIME && mat.getY() >= mat.STOP_Y && progressTime < SOUP_RESUME_TIME) {
+                if (!mat.isStopped && progressTime >= SOUP_STOP_TIME && progressTime < SOUP_RESUME_TIME) { // && mat.getY() >= mat.STOP_Y 조건 뺌
                     mat.isStopped = true;
-                    mat.setY(mat.STOP_Y); // 정확히 150에 고정
+                    mat.setY(mat.getY()); // 정확히 150에 고정
                     System.out.println("수프 정지");
+                    continue;
                 }
 
                 // 2. 재개 조건: 75.5초가 지났을 때
                 if (mat.isStopped && progressTime >= SOUP_RESUME_TIME) {
-                    mat.isStopped = false;
-                    System.out.println("수프 재개");
-                }
+                    if (mat.currentHits >= 8) {
+                        System.out.println("수프 폭발! (클릭 횟수: " + mat.currentHits + ")");
+
+                        // ⚠️ 폭발 로직은 충돌 좌표가 없으므로, 수프의 현재 위치를 폭발 좌표로 사용합니다.
+                        // (클릭 좌표가 필요하다면, matList에서 제거 전에 저장해 둔 좌표를 사용해야 합니다.)
+                        boomDrawX = (int)mat.getX() + mat.getWidth() / 2;
+                        boomDrawY = (int)mat.getY() + mat.getHeight() / 2;
+
+                        // 폭발 애니메이션 및 잔해 생성 (필요하다면 구현)
+                        createAndDropFragments(mat, boomDrawX);
+                        startBoomAnimation();
+
+                        iterator.remove(); // 리스트에서 수프 제거
+                        continue;
+                    } else {
+                        // 2-2. 8회 미만 클릭 시 재개 (MISS 처리)
+                        System.out.println("수프 재개! (클릭 횟수 부족: " + mat.currentHits + ")");
+                        mat.isStopped = false; // 재개 상태로 전환
+                        mat.pauseTime = SOUP_RESUME_TIME - SOUP_STOP_TIME;
+                        System.out.println("수프 위치 : ("+mat.getX()+", "+mat.getY()+")");
+                    }
+                } else if (mat.isStopped && progressTime < SOUP_RESUME_TIME) continue;
 
             }
             //System.out.println("현재 시간: " + StageManager.progressTime);
             //System.out.println("낙하 시작 시간: " + mat.actualDropStartTime);
             // --- [기존 로직: 재료 이동] ---
             if (StageManager.progressTime >= mat.actualDropStartTime) {
-                //System.out.println(mat.matType);
-                //System.out.println(mat.isSoup);
-                mat.drop();
+                // 1. 실제 경과 시간 (ms) 계산
+                long finalElapsedTime = progressTime - mat.actualDropStartTime - mat.pauseTime;
+
+                // 2. 픽셀/틱 속도를 픽셀/ms 속도로 변환
+                double speedX_ms = mat.getXSpeed() / (double) SLEEP_TIME;
+                double speedY_ms = mat.getYSpeed() / (double) SLEEP_TIME;
+
+                // 3. 현재 위치 설정: 시작 위치 + (픽셀/ms 속도 * 경과 시간)
+
+                // 3-1. Y축 위치 계산
+                double currentY = FIXED_START_Y + (speedY_ms * finalElapsedTime);
+                mat.setY(currentY);
+
+                // 3-2. X축 위치 계산
+                double currentX = mat.getInitialX() + (speedX_ms * finalElapsedTime);
+                mat.setX(currentX);
+
+                //System.out.println(mat.matType + " -> x : " + mat.getX() + ", y : " + mat.getY() + "t : " + currentMusicTimeMs);
+
+                // mat.drop(); -> 기존
+
             }
 
             // --- [추가 로직: 화면 이탈 확인 및 제거] ---
@@ -664,21 +791,14 @@ public class SpaceStage3 extends SpaceAnimation {
     }
 
     @Override
+    protected void drawStageObjectsUnderController(Graphics g) {
+
+    }
+
+    @Override
     public void drawStageObjects(Graphics g) {
         // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
         g.drawImage(currentUser, 0, 0, null);
-
-        // 2. 선의 색상 설정 (예: 빨간색)
-        g.setColor(Color.RED);
-
-
-        // 4. 선 그리기
-        // 화면의 가장 왼쪽(0)부터 가장 오른쪽(getWidth())까지 선을 그립니다.
-        // JUDGMENT_LINE_Y는 150입니다.
-        int screenWidth = getWidth(); // SpaceStage3의 너비 (Panel의 너비)
-        int yPos = JUDGEMENT_TARGET_Y;
-
-        g.drawLine(0, yPos, screenWidth, yPos);
 
         // 배너 오버레이 (맨 위)
         if (bannerVisible && stage3Banner != null) {
@@ -717,8 +837,8 @@ public class SpaceStage3 extends SpaceAnimation {
 
         if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
 
-
     }
+
 
     @Override
     public Image getCannon() {
@@ -796,7 +916,8 @@ public class SpaceStage3 extends SpaceAnimation {
 class Material {
     private Image chiliImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/chili01.png"))
             .getImage();
-    private Image eggImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/egg.png")).getImage();
+    private Image eggImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/egg01.png")).getImage();
+    public Image eggImage2 = new ImageIcon(Main.class.getResource("../images/alienStage_image/egg02.png")).getImage();
     private Image mushroomImage = new ImageIcon(Main.class.getResource("../images/alienStage_image/mushroom01.png"))
             .getImage();
     private Image welshonion1Image = new ImageIcon(
@@ -822,16 +943,22 @@ class Material {
     private int width, height;
     public String matType; // 어떤 재료인지
     private double xSpeed, ySpeed;
+    private double initialX;
 
     public boolean isFragment = false;
 
     // ✅ [추가] 수프 전용 필드
     public final int STOP_Y = 150; // 멈출 Y 좌표
-    public final int REQUIRED_HITS = 5; // 필요한 클릭 횟수
+    public final int REQUIRED_HITS = 7; // 필요한 클릭 횟수
 
     public boolean isSoup = false; // 수프 재료인지 여부
     public boolean isStopped = false; // 현재 멈춰있는지
     public int currentHits = 0; // 현재 성공한 클릭 횟수 (멈춰있을 때만 증가)
+
+    public boolean isEgg = false; // 수프 재료인지 여부
+
+    // ⭐️ 그려야 할 이미지 객체 선택
+    Image imageToDraw = null;
 
     public int getWidth() {
         return width;
@@ -847,6 +974,14 @@ class Material {
 
     public double getY() {
         return y;
+    }
+
+    public double getXSpeed() {
+        return this.xSpeed;
+    }
+
+    public double getYSpeed() {
+        return this.ySpeed;
     }
 
     // ⭐️ X, Y 속도 및 위치 설정 메서드 (잔해 조각에 속성 부여용)
@@ -866,6 +1001,11 @@ class Material {
         this.y = y;
     }
 
+    public double getInitialX() {
+        return this.initialX;
+    }
+
+
     // ⭐️ 목표 도착 시간 (정답 타이밍)
     private long targetArriveTime;
 
@@ -876,7 +1016,10 @@ class Material {
 
     public boolean isDead = false; // 제거 대상으로 표시
 
+    public long pauseTime = 0;
+
     public Material(double x, double y, String matType, double xSpeed, double ySpeed, long targetArriveTime, long dropStartTime) {
+        this.initialX = x;
         this.x = x; // 생성 좌표
         this.y = y;
         this.matType = matType;
@@ -888,6 +1031,7 @@ class Material {
         this.isFragment = false;
 
         this.isSoup = matType.equals("soup");
+        this.isEgg = matType.equals("egg");
 
     }
 
@@ -906,45 +1050,9 @@ class Material {
     }
 
     public void screenDraw(Graphics g) {
-		/*
-		switch (matType) {
-		case "chili":
-			width = 157;
-			height = 300;
-			g.drawImage(chiliImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "egg":
-			width = 212;
-			height = 192;
-			g.drawImage(eggImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "mushroom":
-			width = 170;
-			height = 113;
-			g.drawImage(mushroomImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "welshonion1":
-			width = 200;
-			height = 200;
-			g.drawImage(welshonion1Image, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "welshonion2":
-			width = 200;
-			height = 200;
-			g.drawImage(welshonion2Image, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		case "soup":
-			width = 220;
-			height = 271;
-			g.drawImage(soupImage, (int)Math.round(x), (int)Math.round(y), width, height, null);
-			break;
-		}
-	*/
         // ⭐️ Graphics2D 객체 준비 (회전 및 변환을 위해 필요)
         Graphics2D g2d = (Graphics2D) g.create();
 
-        // ⭐️ 그려야 할 이미지 객체 선택
-        Image imageToDraw = null;
 
         if (this.isFragment) {
             // 잔해 조각일 경우: Sliced 이미지 사용
@@ -1000,7 +1108,7 @@ class Material {
             // 1. 이미지 타입에 따라 크기(width, height) 결정
             switch (matType) {
                 case "chili":
-                    width = 137;
+                    width = 120;
                     height = 167;
                     break;
                 case "egg":
@@ -1027,16 +1135,16 @@ class Material {
         } else {
             switch (matType) {
                 case "chili":
-                    width = 157;
-                    height = 300;
+                    width = 126;
+                    height = 240;
                     break;
                 case "egg":
-                    width = 212;
-                    height = 192;
+                    width = 320;
+                    height = 180;
                     break;
                 case "mushroom":
-                    width = 170;
-                    height = 113;
+                    width = 204;
+                    height = 136;
                     break;
                 case "welshonion1":
                 case "welshonion2":
@@ -1071,6 +1179,7 @@ class Material {
                 //}
             } else {
                 // ⭐️ 일반 재료: 기존 방식대로 정위치에 그리기
+                //g2d.drawImage(imageToDraw, (int) Math.round(x), (int) Math.round(y) - height/2, width, height, null);
                 g2d.drawImage(imageToDraw, (int) Math.round(x), (int) Math.round(y), width, height, null);
             }
         }
@@ -1088,12 +1197,22 @@ class Material {
         if (!isStopped) {
             x += this.xSpeed;
             y += this.ySpeed;
+            //System.out.println(matType + " -> x : " + x + ", y : " + y);
         }
     }
 
     public Rectangle getBounds() {
-        return new Rectangle((int) Math.round(x), (int) Math.round(y), width, height);
-    }
+        /*
+        int padding = 10; // ⭐️ 판정 영역을 10픽셀씩 확장 (클릭 쉽게)
 
+        return new Rectangle((int) Math.round(x) - padding,  // X 시작점을 패딩만큼 왼쪽으로 이동
+                (int) Math.round(y) - padding,  // Y 시작점을 패딩만큼 위로 이동
+                width + (padding * 2),         // 너비를 양쪽 패딩만큼 확장
+                height + (padding * 2));*/
+        return new Rectangle((int) Math.round(x),  // X 시작점을 패딩만큼 왼쪽으로 이동
+                (int) Math.round(y),  // Y 시작점을 패딩만큼 위로 이동
+                width,         // 너비를 양쪽 패딩만큼 확장
+                height);
+    }
 
 }

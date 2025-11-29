@@ -73,7 +73,7 @@ public class ResultPanel extends JPanel {
 
         // ✅ 폰트 로드
         try {
-            File fontFile = new File("src/fonts/LAB디지털.ttf");
+            File fontFile = new File("C:\\Users\\SAMSUNG\\Desktop\\project_cookItBeat\\CookItBeat\\src\\fonts\\LAB디지털.ttf");
             InputStream is = new FileInputStream(fontFile);
 
             Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);

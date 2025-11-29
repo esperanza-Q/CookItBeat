@@ -44,6 +44,9 @@ public class SpaceAnimation extends JPanel {
     // 공기포 관련 이미지 배열
     protected Image[] BoomFrames;
 
+    protected Image[] TrashFrames1;
+    protected Image[] TrashFrames2;
+
     //‼️애니메이션 버전
     private Image planets1;
     private double t = 0;
@@ -83,7 +86,8 @@ public class SpaceAnimation extends JPanel {
     private Timer judgementTimer;
     private final int JUDGEMENT_DISPLAY_TIME_MS = 1000; // 판정 결과 표시 시간 (1초)
 
-    private final int GLOBAL_JUDGEMENT_OFFSET_MS = -300;
+    // stage3 타이밍 조정을 위해 private final -> protected 변경
+    protected int GLOBAL_JUDGEMENT_OFFSET_MS = -300;
 
     // ✅ [추가] 점수 오프셋 (이전 스테이지에서 이월된 점수)
     private int scoreOffset = 0;
@@ -125,7 +129,15 @@ public class SpaceAnimation extends JPanel {
             BoomFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/Boom0" + (i + 1) + ".png")).getImage();
         }
 
+        TrashFrames1 = new Image[5];
+        for (int i = 0; i < 5; i++) {
+            TrashFrames1[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/trash1_0" + (i + 1) + ".png")).getImage();
+        }
 
+        TrashFrames2 = new Image[5];
+        for (int i = 0; i < 5; i++) {
+            TrashFrames2[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/trash2_0" + (i + 1) + ".png")).getImage();
+        }
 
         // ✅ [추가] 판정 이미지 로드
         judgementImages[0] = new ImageIcon(Main.class.getResource("../images/mainUI/acc_perfect.png")).getImage(); // PERFECT
@@ -312,11 +324,11 @@ public class SpaceAnimation extends JPanel {
             int adjustedMusicTime = currentMusicTimeMs + GLOBAL_JUDGEMENT_OFFSET_MS;
 
 //            // ‼️ [핵심 로그 추가] ‼️ <--- 여기에 추가
-//            System.out.println("--------------------------------------------------");
-//            System.out.println("[INPUT] Space Bar Pressed!");
-//            System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
-//            System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
-//            System.out.println("--------------------------------------------------");
+           System.out.println("--------------------------------------------------");
+           System.out.println("[INPUT] Space Bar Pressed!");
+           System.out.println("[MUSIC] Raw Music Time (ms): " + currentMusicTimeMs);
+           System.out.println("[JUDGE] Adjusted Time (ms):  " + adjustedMusicTime);
+           System.out.println("--------------------------------------------------");
 
             // ‼️ 조정된 시간을 판정 함수에 전달
             judgementManager.handleInput(adjustedMusicTime);

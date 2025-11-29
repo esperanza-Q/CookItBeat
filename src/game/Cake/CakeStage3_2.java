@@ -17,7 +17,7 @@ public class CakeStage3_2 extends CakeAnimation {
 
     private CakePanel controller;
     protected RhythmJudgementManager judgementManager;
-    private static final int JUDGEMENT_OFFSET_MS = -100;
+    private static final int JUDGEMENT_OFFSET_MS = 50;
 
     private Image cardImage = guideCardImage1;
 
@@ -115,20 +115,9 @@ public class CakeStage3_2 extends CakeAnimation {
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                System.out.println("Mouse Pressed! isPipingActive is now true");
+
                 isPipingActive = true;
-                repaint();
 
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                isPipingActive = false;
-                repaint();
-            }
-
-            @Override
-            public void mouseClicked(MouseEvent e) {
                 int clickX = e.getX();
                 int clickY = e.getY();
                 Image currentDecoImage = null; // 이 클릭 시점에 사용할 이미지
@@ -166,6 +155,14 @@ public class CakeStage3_2 extends CakeAnimation {
                     }
 
                 }
+
+                repaint();
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                isPipingActive = false;
                 repaint();
             }
         });
@@ -189,7 +186,6 @@ public class CakeStage3_2 extends CakeAnimation {
             registerJudgement(j);   // <- 카운트 증가 + lastJudgementResult 세팅까지 한 번에
         }
     }
-
 
 
     @Override
@@ -217,6 +213,40 @@ public class CakeStage3_2 extends CakeAnimation {
 
     @Override
     protected void drawStageObjects(Graphics2D g2) {
+        long currentTime = currentMusicTimeMs;
+
+        Image currentPipingImage = isPipingActive ? creamPiping2 : creamPiping1;
+
+        Image imageToFollow = null;
+
+        // 1. 🍓 딸기 데코 구간 (102988ms ~ 108000ms 미만)
+        // ‼️ 두 구간이 겹치므로, 딸기 이미지를 우선하여 검사합니다.
+        if (currentTime >= STRAWBERRY_GUIDE_START && currentTime < STRAWBERRY_END_TIME) {
+            imageToFollow = decoStrawberry;
+        }
+
+        // 2. 🍦 크림 데코 구간 (96140ms ~ 102988ms 미만)
+        // ‼️ 딸기 구간과 겹치는 102988ms에서는 딸기가 선택됩니다.
+        else if (currentTime >= CREAM_GUIDE_START && currentTime < CREAM_END_TIME) {
+            imageToFollow = currentPipingImage;
+        }
+
+        if (imageToFollow != null) {
+            if (!successfulClicks.isEmpty()) { // 리스트가 비어있지 않으면
+                for (DecoratedClick dc : successfulClicks) {
+                    int x = dc.x;
+                    int y = dc.y;
+                    int width = dc.width;
+                    int height = dc.height;
+                    Image image = dc.image;
+
+                    if (image != null) {
+                        // 이미지를 중앙에 정렬하여 그리기
+                        g2.drawImage(image, x - width / 2, y - height / 2, width, height, null);
+                    }
+                }
+            }
+        }
         // 🖼️ 가이드 카드병정 이미지
         if (guideCardImage1 != null && cardImage != null) {
             for (int i = 0; i < GUIDE_TIMES_INT.length - 1; i++) {
@@ -241,10 +271,6 @@ public class CakeStage3_2 extends CakeAnimation {
             g2.drawImage(cardImage, 20, -30, getWidth(), getHeight(), null);
             g2.setTransform(originalTransform);
         }
-
-        long currentTime = currentMusicTimeMs;
-
-        Image currentPipingImage = isPipingActive ? creamPiping2 : creamPiping1;
 
         // --- A. 크림 가이드 및 애니메이션 구간 (96140ms ~ 99000ms) ---
         if (currentTime >= CREAM_GUIDE_START && currentTime < CREAM_GUIDE_END) {
@@ -326,20 +352,6 @@ public class CakeStage3_2 extends CakeAnimation {
 
         // --- C. 마우스 따라다니기 로직 (수정됨) ---
 
-        Image imageToFollow = null;
-
-        // 1. 🍓 딸기 데코 구간 (102988ms ~ 108000ms 미만)
-        // ‼️ 두 구간이 겹치므로, 딸기 이미지를 우선하여 검사합니다.
-        if (currentTime >= STRAWBERRY_GUIDE_START && currentTime < STRAWBERRY_END_TIME) {
-            imageToFollow = decoStrawberry;
-        }
-
-        // 2. 🍦 크림 데코 구간 (96140ms ~ 102988ms 미만)
-        // ‼️ 딸기 구간과 겹치는 102988ms에서는 딸기가 선택됩니다.
-        else if (currentTime >= CREAM_GUIDE_START && currentTime < CREAM_END_TIME) {
-            imageToFollow = currentPipingImage;
-        }
-
         // 3. 이미지 그리기
         if (imageToFollow != null) {
             // 마우스 커서 중앙에 이미지가 오도록 좌표를 조정합니다.
@@ -347,21 +359,6 @@ public class CakeStage3_2 extends CakeAnimation {
             int TOOL_SIZE_y = 0;
             int drawX = 0;
             int drawY = 0;
-
-            if (!successfulClicks.isEmpty()) { // 리스트가 비어있지 않으면
-                for (DecoratedClick dc : successfulClicks) {
-                    int x = dc.x;
-                    int y = dc.y;
-                    int width = dc.width;
-                    int height = dc.height;
-                    Image image = dc.image;
-
-                    if (image != null) {
-                        // 이미지를 중앙에 정렬하여 그리기
-                        g2.drawImage(image, x - width / 2, y - height / 2, width, height, null);
-                    }
-                }
-            }
 
             if (imageToFollow == currentPipingImage) {
                 TOOL_SIZE_x = 225;
@@ -378,8 +375,6 @@ public class CakeStage3_2 extends CakeAnimation {
             g2.drawImage(imageToFollow, drawX, drawY, TOOL_SIZE_x, TOOL_SIZE_y, null);
 
         }
-
-
     }
 
     public class Ellipse {
