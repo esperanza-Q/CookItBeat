@@ -81,8 +81,6 @@ public class CakeStage3_2 extends CakeAnimation {
 
     private Ellipse cakeBound = new Ellipse(635, 455, 420, 345);
 
-    private int check = 0;
-
     public CakeStage3_2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
         this.controller = controller;
@@ -117,8 +115,6 @@ public class CakeStage3_2 extends CakeAnimation {
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                System.out.println(check + ": " + currentMusicTimeMs);
-                check++;
 
                 isPipingActive = true;
 
@@ -169,48 +165,6 @@ public class CakeStage3_2 extends CakeAnimation {
                 isPipingActive = false;
                 repaint();
             }
-/*
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int clickX = e.getX();
-                int clickY = e.getY();
-                Image currentDecoImage = null; // 이 클릭 시점에 사용할 이미지
-                int width, height;
-
-                // 충돌 판정 루프
-                if (cakeBound.contains(clickX, clickY)) {
-                    //Music.playEffect("laser02.mp3");
-                    processSpaceKeyPressLogic(); // 판정 로직
-                    if (!lastJudgementResult.equals("NONE") && !lastJudgementResult.equals("MISS")) {
-
-                        if (currentMusicTimeMs >= CREAM_GUIDE_END && currentMusicTimeMs < STRAWBERRY_GUIDE_START) {
-                            currentDecoImage = decoCream;
-                            width = 210; // 150 * 1.3
-                            height = 293;
-                        } else if (currentMusicTimeMs >= STRAWBERRY_GUIDE_END && currentMusicTimeMs <= STRAWBERRY_END_TIME) {
-                            currentDecoImage = decoStrawberry;
-                            width = 320; // 230 * 1.3
-                            height = 273; // 210
-                        } else {
-                            return; // 해당 타이밍에 유효한 이미지가 없으면 추가하지 않음
-                        }
-
-                        // 2. 새로운 DecoratedClick 객체를 생성하여 리스트에 추가
-                        if (currentDecoImage != null) {
-                            DecoratedClick newClick = new DecoratedClick(
-                                    clickX,
-                                    clickY,
-                                    currentDecoImage,
-                                    width,
-                                    height
-                            );
-                            successfulClicks.add(newClick);
-                        }
-                    }
-
-                }
-                repaint();
-            }*/
         });
 
         // 이 컴포넌트가 마우스 이벤트를 받을 수 있도록 focusable 설정

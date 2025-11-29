@@ -44,6 +44,9 @@ public class SpaceAnimation extends JPanel {
     // 공기포 관련 이미지 배열
     protected Image[] BoomFrames;
 
+    protected Image[] TrashFrames1;
+    protected Image[] TrashFrames2;
+
     //‼️애니메이션 버전
     private Image planets1;
     private double t = 0;
@@ -126,7 +129,15 @@ public class SpaceAnimation extends JPanel {
             BoomFrames[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/Boom0" + (i + 1) + ".png")).getImage();
         }
 
+        TrashFrames1 = new Image[5];
+        for (int i = 0; i < 5; i++) {
+            TrashFrames1[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/trash1_0" + (i + 1) + ".png")).getImage();
+        }
 
+        TrashFrames2 = new Image[5];
+        for (int i = 0; i < 5; i++) {
+            TrashFrames2[i] = new ImageIcon(Main.class.getResource("../images/alienStage_image/trash2_0" + (i + 1) + ".png")).getImage();
+        }
 
         // ✅ [추가] 판정 이미지 로드
         judgementImages[0] = new ImageIcon(Main.class.getResource("../images/mainUI/acc_perfect.png")).getImage(); // PERFECT

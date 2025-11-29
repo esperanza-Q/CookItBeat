@@ -172,7 +172,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 95280) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -192,7 +192,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 95280) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -212,7 +212,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 95280) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)

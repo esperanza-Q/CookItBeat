@@ -80,6 +80,18 @@ public class SpaceStage3 extends SpaceAnimation {
     private int boomDrawX = -1;
     private int boomDrawY = -1;
 
+    private Timer trashAnimationTimer;
+    private int trashFrameIndex = 0;
+    private Image currentTrashImage; // 현재 잔해 애니메이션 프레임 이미지
+    private final int TRASH_ANIMATION_DELAY = 150; // 예시 딜레이 (ms)
+    // 잔해 이미지 크기 조절 (1.0f = 원본 크기)
+    private float trashScale = 1.0f;
+    private int trash1DrawX = 0;
+    private int trash1DrawY = 0;
+
+    private int trash2DrawX = 0;
+    private int trash2DrawY = 0;
+
     private final double DIFFICULTY_FACTOR = 0.5; // 난이도 조절 계수 (0.5 = 50% 속도)
 
     // 이벤트 발동 여부
@@ -141,8 +153,10 @@ public class SpaceStage3 extends SpaceAnimation {
     private final int[] ALIEN_RELEASE_TIMES;
 
     // ✅ [추가] 수프 멈춤/재개 타이밍 상수
-    private final long SOUP_STOP_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[8] - 550;   // 72.5초에 정지 조건 활성화
-    private final long SOUP_RESUME_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[19] + 100; // 75.5초에 재개
+    private final long SOUP_STOP_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[8] - 500;   // 72.5초에 정지 조건 활성화
+    private final long SOUP_RESUME_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[19] + 50; // 75.5초에 재개
+
+    private final long trashStartTime = toJudgeMs(67265);
 
     // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
     private static long[] convertToLongArray(int[] array) {
@@ -391,6 +405,26 @@ public class SpaceStage3 extends SpaceAnimation {
             boomAnimationTimer.stop();
         }
         boomAnimationTimer.start();
+    }
+
+    private void setupTrashAnimationTimer() {
+        trashAnimationTimer = new Timer(TRASH_ANIMATION_DELAY, e -> {
+            trashFrameIndex++;
+
+            if (trashFrameIndex < TrashFrames1.length) {
+                currentTrashImage = TrashFrames1[trashFrameIndex];
+            } else {
+                // 애니메이션 종료 후 이미지 null로 설정
+                trashAnimationTimer.stop();
+                //currentTrashImage = null; -> 마우스 클릭 많이하면 사라지게
+
+                // ⭐️ [추가] 애니메이션 종료 후 그리기 위치 초기화
+                //trash1DrawX = -1;
+                //trash1DrawY = -1;
+            }
+            repaint();
+        });
+        trashAnimationTimer.setRepeats(true);
     }
 
     // ======== 🔹 슬로우 구간 정보 (ms단위)
@@ -757,22 +791,15 @@ public class SpaceStage3 extends SpaceAnimation {
     }
 
     @Override
+    protected void drawStageObjectsUnderController(Graphics g) {
+
+    }
+
+    @Override
     public void drawStageObjects(Graphics g) {
         // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
         g.drawImage(currentUser, 0, 0, null);
-/*
-        // 2. 선의 색상 설정 (예: 빨간색)
-        g.setColor(Color.RED);
 
-
-        // 4. 선 그리기
-        // 화면의 가장 왼쪽(0)부터 가장 오른쪽(getWidth())까지 선을 그립니다.
-        // JUDGMENT_LINE_Y는 150입니다.
-        int screenWidth = getWidth(); // SpaceStage3의 너비 (Panel의 너비)
-        int yPos = JUDGEMENT_TARGET_Y;
-
-        g.drawLine(0, yPos, screenWidth, yPos);
-*/
         // 배너 오버레이 (맨 위)
         if (bannerVisible && stage3Banner != null) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -810,8 +837,8 @@ public class SpaceStage3 extends SpaceAnimation {
 
         if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
 
-
     }
+
 
     @Override
     public Image getCannon() {
