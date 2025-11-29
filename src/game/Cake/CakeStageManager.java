@@ -196,7 +196,7 @@ public class CakeStageManager {
     }
 
     // 💡 [추가] 기습 스테이지의 길이 (10초)
-    private static final long SURPRISE_PANEL_DURATION = 12000L;
+    private static final long SURPRISE_PANEL_DURATION = 11000L;
 
     // 💡 [추가] 토끼가 멈췄다가 이어 달릴 때, 총 음악 길이에서 빼야 할 시간
     public static long getMusicLengthAdjustment() {
