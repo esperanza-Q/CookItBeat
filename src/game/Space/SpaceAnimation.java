@@ -240,8 +240,6 @@ public class SpaceAnimation extends JPanel {
 
                     startForwardAnimation();
 
-
-
                     // ✅ [수정] 스페이스바 로직(판정 처리 포함)을 처리하는 protected 메서드 호출
                     processSpaceKeyPressLogic();
                 }
