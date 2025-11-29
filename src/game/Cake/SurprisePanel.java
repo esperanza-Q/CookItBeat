@@ -45,6 +45,7 @@ public class SurprisePanel extends JPanel {
     // 💡 [추가] 음악 파일 경로 상수
     private static final String SURPRISE_MUSIC_FILE = "../music/cakeSurprise.mp3";
     private static final String SUCCESS_SOUND_FILE = "../music/success_sound_surprise.mp3"; // 💡 [추가] 성공 효과음 파일 경로
+    private static final String SPEAR_CLICK_SOUND = "../music/spear1.mp3"; // 💡 [추가] 창 클릭 효과음 파일 경로
 
     private Music surpriseMusic; // 💡 [추가] 서프라이즈 패널 전용 배경 음악 객체
     private Music successSound;  // 💡 [추가] 성공 효과음 객체 (단발성)
@@ -94,6 +95,24 @@ public class SurprisePanel extends JPanel {
 
         // 3. 마우스 이벤트 리스너 등록
         addMouseListener(new SurpriseMouseListener());
+    }
+
+    // ----------------------------------------------------
+    // ‼️ [추가] 창 클릭 효과음 재생 로직
+    // ----------------------------------------------------
+    private void playSpearClickSound() {
+        try {
+            // 클릭 효과음은 단발성이므로 Music 객체를 새로 생성하고 재생합니다.
+            // 이전 객체를 닫지 않으면 소리가 겹칠 수 있습니다.
+            Music clickSound = new Music(SPEAR_CLICK_SOUND, false);
+            clickSound.start();
+            System.out.println("🔊 창 클릭 효과음 재생: " + SPEAR_CLICK_SOUND);
+
+            // 짧은 효과음이므로 Music 클래스의 내부 구현에 따라 소리가 끝나면 리소스를 해제하도록 합니다.
+
+        } catch (Exception e) {
+            System.err.println("🔴 창 클릭 효과음 로드 또는 재생 실패.");
+        }
     }
 
     // ----------------------------------------------------
@@ -277,6 +296,9 @@ public class SurprisePanel extends JPanel {
                 spearImage = spear02;
                 isSpearClicked = true;
                 imageChanged = true;
+
+                // 💡 [핵심 추가] 창(Spear) 클릭 시 효과음 재생
+                playSpearClickSound();
             }
 
             if (strawBounds.contains(clickPoint) && !isStrawberryClicked) {
