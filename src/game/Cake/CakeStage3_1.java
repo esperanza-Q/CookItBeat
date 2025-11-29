@@ -172,7 +172,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= 95280) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -192,7 +192,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= 95280) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -212,7 +212,7 @@ public class CakeStage3_1 extends CakeAnimation {
                                 targetNote.finalDrawY
                         );
                         // 4. HitResult 목록에 추가 (이것이 그림을 유지시킵니다)
-                        if(currentMusicTimeMs <= 94400) drawnCreams.add(result);
+                        if(currentMusicTimeMs <= 95280) drawnCreams.add(result);
                         else drawnBigCreams.add(result);
 
                         // 5. 이미 처리된 노트는 악보에서 제거 (중복 처리 방지)
@@ -407,11 +407,11 @@ public class CakeStage3_1 extends CakeAnimation {
             currentCatImage = creamCat;
         }
 
-        if (currentTime > GUIDE_END && currentTime <= 94400) {
+        if (currentTime > GUIDE_END && currentTime <= END_TIME) {
             for (HitResult result : drawnCreams) {
                 if (result.image != null) {
                     // result 객체에 저장된 finalDrawX, finalDrawY 위치에 그립니다.
-                    g2.drawImage(result.image, result.x, result.y, this);
+                    g2.drawImage(result.image, result.x, result.y, 200, 200, this);
                 }
             }
             g2.drawImage(currentPipingImage, 600, 270, 495, 405, null);
