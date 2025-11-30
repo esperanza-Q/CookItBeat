@@ -538,13 +538,20 @@ public class SpaceAnimation extends JPanel {
         int totalLength = StageManager.musicLengthMs;
         if (totalLength > 0) {
 
-            double progress = (double) t / totalLength;
+            double progress = (double) t / totalLength ;
+
+            // ‼️ [핵심 수정] progress의 최대값을 1.0으로 제한
+            progress = Math.min(1.0, progress);
+
+//            System.out.println(progress);
 
             // ✅ barX를 여기서도 다시 계산
             int barX = getWidth() - BAR_WIDTH - 20;
+            int barEnd = BAR_WIDTH - 130;
 
             // ✅ 왼 → 오 이동 (BAR_WIDTH 사용)
-            this.spaceshipX = barX + (int) (progress * BAR_WIDTH);
+            this.spaceshipX = barX + (int) (progress * barEnd);
+
 
             processStageEvents(t);
             

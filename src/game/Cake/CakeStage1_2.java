@@ -90,10 +90,11 @@ public class CakeStage1_2 extends CakeAnimation {
                 .collect(Collectors.toList());
 
         final long OFFSET_MS = 100;
+        final long Offset = CakeStageManager.isSurpriseStageOccurred() ? OFFSET_MS : 0;
 
         this.judgementManager = new RhythmJudgementManager(
                 CORRECT_TIMES_MS.stream()
-                        .map(startTime -> startTime + OFFSET_MS)
+                        .map(startTime -> startTime + Offset)
                         .collect(Collectors.toList()),
                 initialScoreOffset
         );
@@ -251,6 +252,9 @@ public class CakeStage1_2 extends CakeAnimation {
 
             // 2. 판정 결과 문자열 획득
             String judgementResultString = judgementManager.getLastJudgement();
+
+            // ✅ perfect / good / miss 카운트 & 판정 UI 공통 처리
+            registerJudgement(judgementResultString);
 
             // ‼️ [핵심 수정] 판정이 Good 이상일 때만 계란 드롭 상태 업데이트
             if (judgementResultString.equals("PERFECT!") ||

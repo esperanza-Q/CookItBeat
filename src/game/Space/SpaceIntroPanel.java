@@ -67,6 +67,17 @@ public class SpaceIntroPanel extends JPanel {
 이것이 바로 연금술이자 과학이다!
 """,
 
+            //기습 요소 언급
+            """
+후루룩 깐따삐야  (수석 연구원):
+(지직... 지직...) 삐리...?! 돌발 변수 발생!
+강력한 '우주 태양풍'으로 통신 링크 불안정... 
+잠시 시공간이 왜곡되어... 노래가... 느...려...질... 거...다.
+당황하지 마라! 늘어진 템포조차 완벽하게 계산해서 반응해 
+삐리릿!!
+
+""",
+
             // 마무리
             """
 후루룩 깐따삐야  (수석 연구원):
@@ -355,8 +366,8 @@ public class SpaceIntroPanel extends JPanel {
     /**
      * 줄바꿈 + 키 토큰 하이라이트 + 화자 회색 처리
      */
-    private void drawWrappedStringWithHighlight(Graphics g, String text, int x, int y, int maxWidth, int lineHeight) {
-        FontMetrics fm = g.getFontMetrics();
+    private void drawWrappedStringWithHighlight(Graphics g, String text,
+                                                int x, int y, int maxWidth, int lineHeight) {
         int maxX = x + maxWidth;
 
         String[] lines = text.split("\n");
@@ -369,7 +380,8 @@ public class SpaceIntroPanel extends JPanel {
                 continue;
             }
 
-            boolean isSpeakerLine = lineText.startsWith("후루룩 깐따삐야 (수석 연구원):");
+            // 앞에 "후루룩 깐따삐야" 로 시작하면 화자 줄로 인식 (공백 개수 차이 방지)
+            boolean isSpeakerLine = lineText.startsWith("후루룩 깐따삐야");
 
             String[] tokens = lineText.split(" ");
             int currentX = x;
@@ -377,22 +389,26 @@ public class SpaceIntroPanel extends JPanel {
             for (String rawToken : tokens) {
                 if (rawToken.isEmpty()) continue;
 
-                String tokenWithSpace = rawToken + " ";
-                int tokenWidth = fm.stringWidth(tokenWithSpace);
-
-                if (currentX + tokenWidth > maxX) {
-                    currentY += lineHeight;
-                    currentX = x;
-                }
-
-                // 폰트 (화자 줄은 살짝 더 굵게/크게 주고 싶으면 여기서 조절)
+                // ✅ 폰트 먼저 설정
                 if (isSpeakerLine) {
                     g.setFont(dialogue.deriveFont(Font.BOLD, 25f));
                 } else {
                     g.setFont(dialogue);
                 }
 
-                // 색상 우선순위: 키 하이라이트 > 화자 회색 > 기본 흰색
+                // ✅ 폰트 설정 후에 매번 FontMetrics 다시 가져오기
+                FontMetrics fm = g.getFontMetrics();
+
+                String tokenWithSpace = rawToken + " ";
+                int tokenWidth = fm.stringWidth(tokenWithSpace);
+
+                // 줄바꿈 체크
+                if (currentX + tokenWidth > maxX) {
+                    currentY += lineHeight;
+                    currentX = x;
+                }
+
+                // ✅ 색상: 키 하이라이트 > 화자 회색 > 기본 흰색
                 if (isHighlightToken(rawToken)) {
                     g.setColor(HIGHLIGHT_COLOR);
                 } else if (isSpeakerLine) {
@@ -401,13 +417,15 @@ public class SpaceIntroPanel extends JPanel {
                     g.setColor(TEXT_COLOR);
                 }
 
-                g.drawString(rawToken, currentX, currentY);
+                // ✅ 실제로는 공백까지 포함해서 그려줌
+                g.drawString(tokenWithSpace, currentX, currentY);
                 currentX += tokenWidth;
             }
 
             currentY += lineHeight;
         }
     }
+
 
     // ✅ 어떤 토큰을 하이라이트 할지
     private boolean isHighlightToken(String token) {

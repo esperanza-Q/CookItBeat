@@ -73,6 +73,7 @@ public class CakeStage1_1 extends CakeAnimation {
     // private static final int STRAWBERRY_FALL_DURATION_MS = 20;
     // private static final int STRAWBERRY_FALL_START_OFFSET_MS = -(STRAWBERRY_FALL_DURATION_MS + 200);
 
+    protected static final int JUDGEMENT_OFFSET_MS = 100; // 원하는 값으로 설정 (예: -30ms)
 
     // ⚔️ [최종 수정됨] 최대 11개의 고정된 슬롯 위치 (첫 줄 8개, 둘째 줄 3개)
     private static final Point[] SLOT_POSITIONS = {

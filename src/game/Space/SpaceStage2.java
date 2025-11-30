@@ -70,7 +70,7 @@ public class SpaceStage2 extends SpaceAnimation {
     private float boomScale = 0.7f;   // 70% 크기
 
     // 53초 구간 전환 타이밍 (53.139초)
-    private static final int PHASE_CHANGE_TIME_53 = 53139;  // 53.139 * 1000
+    private static final int PHASE_CHANGE_TIME_53 = 54010;  // 53.139 * 1000
 
     // 🔹 키 가이드 고정 타이밍 (초 단위)
     private static final double[] GUIDE_TIMES_SEC = {
@@ -83,9 +83,9 @@ public class SpaceStage2 extends SpaceAnimation {
     // 플레이어 입력 보정 (ms)
     // +면 판정선을 뒤로(늦게), -면 앞으로(일찍) 이동
     private static final int[] USER_INPUT_BIAS_MS = {
-            -40,  // musicIndex 0 : 평균 40ms 정도 일찍 침
+            0,  // musicIndex 0 : 평균 40ms 정도 일찍 침
             0,    // musicIndex 1 : 아직 데이터 없으면 0
-            80,   // musicIndex 2 : 이전 로그 기준 80ms 정도 늦게 침
+            -150,   // musicIndex 2 : 이전 로그 기준 80ms 정도 늦게 침
             0     // musicIndex 3
     };
 
@@ -368,36 +368,38 @@ public class SpaceStage2 extends SpaceAnimation {
 
             // musicIndex = 0
             {
-                    29.983, 30.203, 30.423,
-                    33.410, 33.850,
-                    37.718, 37.928, 38.138,
-                    48.649, 48.858, 50.138, 50.358, 50.578, 50.798, 52.290, 52.715, 53.139
+                    29.883, 30.203, 30.423,
+                    33.110, 33.550,
+                    36.980, 37.180, 37.340,   // 🔥 37.218, 37.428, 37.638 → 네 입력에 맞게 앞당김
+                    48.149, 48.458, 50.138, 50.358, 50.578, 50.798, 52.290, 52.715, 52.939
             },
 
-            // musicIndex = 1
+            // musicIndex = 1 (수정본)
             {
-                    29.983, 30.203, 30.423,
-                    34.019, 34.459,
-                    38.327, 38.537, 38.747,
-                    49.258, 49.467, 50.747, 50.967, 51.187, 51.407, 52.899, 53.324, 53.748
-
+                    29.883, 30.051, 30.423,
+                    33.190, 33.630,
+                    38.027, 38.237, 38.447,
+                    49.258, 49.821, 50.747, 50.967, 51.187, 51.407, 52.899, 53.324, 53.748
             },
 
-            // musicIndex = 2
+            // musicIndex = 2 (기습 0 4번째 변화)
             {
-                    29.983, 30.203, 30.423,
-                    33.410, 33.850,
-                    37.718, 37.928, 38.138,
-                    49.126, 49.335, 50.615, 50.835, 51.055, 51.275, 52.767, 53.192, 53.616
+                    29.883, 30.203, 30.423,
+                    33.110, 33.550,
+                    36.950, 37.140, 37.380,
 
+                    49.126, 49.335,
+                    50.615, 50.835, 51.055, 51.275,
+                    52.767, 53.192, 53.900
             },
+
 
             // musicIndex = 3
             {
-                    29.983, 30.203, 30.423,
-                    33.410, 33.850,
-                    37.718, 37.928, 38.138,
-                    48.649, 48.858, 50.138, 50.358, 50.578, 50.798, 52.290, 52.715, 53.139
+                    29.883, 30.203, 30.423,
+                    33.110, 33.550,
+                    36.980, 37.180, 37.340,   // 🔥 37.218, 37.428, 37.638 → 네 입력에 맞게 앞당김
+                    48.149, 48.458, 50.138, 50.358, 50.578, 50.798, 52.290, 52.715, 52.939
             }
     };
 
@@ -448,7 +450,7 @@ public class SpaceStage2 extends SpaceAnimation {
             // musicIndex = 0
             {
                     KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
-                    KeyEvent.VK_D, KeyEvent.VK_D,                 // 3,4   → D 로 변경
+                    KeyEvent.VK_A, KeyEvent.VK_A,                 // 3,4   → D 로 변경
                     KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
@@ -458,7 +460,7 @@ public class SpaceStage2 extends SpaceAnimation {
             // musicIndex = 1
             {
                     KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
-                    KeyEvent.VK_D, KeyEvent.VK_D,             // 3,4   → D 로 변경
+                    KeyEvent.VK_A, KeyEvent.VK_A,             // 3,4   → D 로 변경
                     KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
@@ -468,7 +470,7 @@ public class SpaceStage2 extends SpaceAnimation {
             // musicIndex = 2
             {
                     KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
-                    KeyEvent.VK_D, KeyEvent.VK_D,             // 3,4   → D 로 변경
+                    KeyEvent.VK_A, KeyEvent.VK_A,             // 3,4   → D 로 변경
                     KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
@@ -478,7 +480,7 @@ public class SpaceStage2 extends SpaceAnimation {
             // musicIndex = 3
             {
                     KeyEvent.VK_A, KeyEvent.VK_A, KeyEvent.VK_A,   // 0,1,2 → A
-                    KeyEvent.VK_D, KeyEvent.VK_D,           // 3,4   → D 로 변경
+                    KeyEvent.VK_A, KeyEvent.VK_A,           // 3,4   → D 로 변경
                     KeyEvent.VK_D, KeyEvent.VK_D, KeyEvent.VK_D,  // 5,6,7 → D
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 8,9,10 → W
                     KeyEvent.VK_W, KeyEvent.VK_W, KeyEvent.VK_W,  // 11,12,13 → W
@@ -600,8 +602,12 @@ public class SpaceStage2 extends SpaceAnimation {
             public void keyPressed(KeyEvent e) {
                 int code = e.getKeyCode();
 
-                // 🔹 사용자가 누른 키 로그
-                System.out.println("[KEY] Pressed: " + KeyEvent.getKeyText(code) + " (code=" + code + "), time=" + currentMusicTimeMs);
+                // 🔹 사용자가 누른 키 로그 (한국어)
+//                System.out.println("========== 키 입력 ==========");
+//                System.out.println("입력 키 : " + KeyEvent.getKeyText(code) + " (code=" + code + ")");
+//                System.out.println("내 입력 시간 : " + currentMusicTimeMs + " ms ("
+//                        + String.format("%.3f", currentMusicTimeMs / 1000.0) + "초)");
+//                System.out.println("------------------------------");
 
                 boolean fireLeft = false;
                 boolean fireRight = false;
@@ -657,14 +663,25 @@ public class SpaceStage2 extends SpaceAnimation {
                     int noteTime    = userPressTimesMs[noteIdx];
                     int diff        = Math.abs(currentMusicTimeMs - noteTime);
 
-//                    // 🔹 디버그용 로그
-//                    System.out.println("Input Key: " + KeyEvent.getKeyText(code)
-//                            + " | Expected: " + KeyEvent.getKeyText(expectedKey));
-//                    System.out.println("Input Time: " + currentMusicTimeMs);
-//                    System.out.println("Closest Correct Time: " + noteTime);
-//                    System.out.println("Measured Difference (minDiff): " + diff);
-//                    System.out.println("------------------------------------");
-
+//                    // 🔹 DAW에서 뽑은 원래 논리 시간(초)도 함께 보기
+//                    double logicalSec = USER_PRESS_TIMES_SEC_BY_MUSIC[safeMusicIndex()][noteIdx];
+//                    // 🔹 한국어 디버그 로그
+//                    System.out.println("🎵 판정 로그");
+//                    System.out.println(" - 노트 인덱스 : " + noteIdx);
+//                    System.out.println(" - 정답 키      : " + KeyEvent.getKeyText(expectedKey));
+//                    System.out.println(" - 입력 키      : " + KeyEvent.getKeyText(code));
+//                    System.out.println(" - 정답 시간(논리값) : "
+//                            + String.format("%.3f", logicalSec) + "초");
+//                    System.out.println(" - 정답 시간(판정 기준) : "
+//                            + noteTime + " ms");
+//                    System.out.println(" - 내 입력 시간 : "
+//                            + currentMusicTimeMs + " ms ("
+//                            + String.format("%.3f", currentMusicTimeMs / 1000.0) + "초)");
+//                    System.out.println(" - 시간 차이    : " + diff + " ms");
+//
+//                    boolean inJudge = (code == expectedKey && diff <= JUDGE_GOOD_MS);
+//                    System.out.println(" ▶ 결과 : " + (inJudge ? "판정 범위 안(HIT)" : "MISS 또는 다른 키"));
+//                    System.out.println("====================================");
 
                     // ✔︎ "박자에 맞고" + "맞는 키" 인 경우에만 HIT
                     if (code == expectedKey && diff <= JUDGE_GOOD_MS) {
@@ -759,11 +776,11 @@ public class SpaceStage2 extends SpaceAnimation {
     private static final int   NOODLE_FRAME_DELAY_MS = 300; // 프레임 전환 간격
 
 
-    // 🔹 근처 노트를 찾을 시간 범위 (±500ms 안에 있는 노트만 대상으로)
-    private static final int NOTE_SEARCH_WINDOW_MS = 500;
+    // 🔹 근처 노트를 찾을 시간 범위 (±650ms 안에 있는 노트만 대상으로)
+    private static final int NOTE_SEARCH_WINDOW_MS = 800;
 
     // 🔹 이 안에 들어오면 "성공"으로 볼 시간 범위 (원하는 대로 조절)
-    private static final int JUDGE_GOOD_MS = 230;   // ±230ms
+    private static final int JUDGE_GOOD_MS =350;   // ±350ms
 
 
     // 🔵 수정된 spawnNoodle
@@ -1060,8 +1077,10 @@ public class SpaceStage2 extends SpaceAnimation {
 
         // 48.000초 근처에서 한 번만 (오른쪽/왼쪽에 각각 다른 범위)
         if (!noodleSpawn4 && t >= 48000) {
-            spawnNoodle(t, false, 16, 17);  // 예: 첫 면발
-            spawnNoodle(t, true, 18, 22); // 예: 두 번째 면발
+            // ✅ 수정: 실제 존재하는 노트 인덱스 기준으로 매핑
+            spawnNoodle(t, false, 14, 15); // 마지막 3타 중 앞 2개
+            spawnNoodle(t, true, 16, 16);  // 마지막 한 방
+
             noodleSpawn4 = true;
         }
 
