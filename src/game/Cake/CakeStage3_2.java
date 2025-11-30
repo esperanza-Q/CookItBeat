@@ -12,6 +12,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CakeStage3_2 extends CakeAnimation {
 
@@ -24,7 +25,7 @@ public class CakeStage3_2 extends CakeAnimation {
     // 성공적으로 클릭된 모든 좌표를 저장할 리스트
     private List<DecoratedClick> successfulClicks = new ArrayList<>();
 
-    private static final int[] GUIDE_TIMES_INT = {
+    private static final int[] ORIGINAL_GUIDE_TIMES_MS = {
             96140, 96340, 96575, 96997, 97201, 97428, // 크림 가이드
             102988, 103204, 103430, 103861, 104076, 104281 // 딸기 가이드
     };
@@ -60,17 +61,17 @@ public class CakeStage3_2 extends CakeAnimation {
         return timingsList;
     }
 
-    private static final long CREAM_GUIDE_START = 96140; // 크림 가이드 시작 (첫 번째 타이밍)
-    private static final long CREAM_ANIMATION_START = 97837; // 반복 애니메이션 시작
-    private static final long CREAM_GUIDE_END = 99000;   // ‼️ 가이드 이미지가 최종 사라지는 시점
+    private static long CREAM_GUIDE_START = 96140; // 크림 가이드 시작 (첫 번째 타이밍)
+    private static long CREAM_ANIMATION_START = 97837; // 반복 애니메이션 시작
+    private static long CREAM_GUIDE_END = 99000;   // ‼️ 가이드 이미지가 최종 사라지는 시점
 
-    private static final long CREAM_END_TIME = 102988;
+    private static long CREAM_END_TIME = 102988;
 
-    private static final long STRAWBERRY_GUIDE_START = 102988; // 딸기 가이드 시작
-    private static final long STRAWBERRY_ANIMATION_START = 104700; // 반복 애니메이션 시작
-    private static final long STRAWBERRY_GUIDE_END = 106000; // 딸기 데코 시작 (가이드 숨김 시점)
+    private static long STRAWBERRY_GUIDE_START = 102988; // 딸기 가이드 시작
+    private static long STRAWBERRY_ANIMATION_START = 104700; // 반복 애니메이션 시작
+    private static long STRAWBERRY_GUIDE_END = 106000; // 딸기 데코 시작 (가이드 숨김 시점)
 
-    private static final long STRAWBERRY_END_TIME = 108000;  // 딸기 데코 구간 끝
+    private static long STRAWBERRY_END_TIME = 115000;  // 딸기 데코 구간 끝
 
     private static final int ANIMATION_FRAME_RATE = 150; // 애니메이션 프레임 전환 속도 (ms)
 
@@ -81,14 +82,48 @@ public class CakeStage3_2 extends CakeAnimation {
 
     private Ellipse cakeBound = new Ellipse(635, 455, 420, 345);
 
+    private static final long TIME_OFFSET_MS = 41000L;
+
+    private final List<Long> GUIDE_TIMES_INT;
+    private final List<Long> CORRECT_TIMES_MS;
+
     public CakeStage3_2(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
+
+        final long finalOffset = CakeStageManager.isSurpriseStageOccurred() ? TIME_OFFSET_MS : 0;
+
+        if (CakeStageManager.isSurpriseStageOccurred()) {
+            System.out.println("🎵 Stage 1-2: 기습 스테이지 발생으로 타이밍 오프셋 -" + finalOffset + "ms 적용.");
+        } else {
+            System.out.println("🎵 Stage 1-2: 기습 스테이지 미발생. 타이밍 오프셋 미적용.");
+        }
+
+// 1. 가이드 타이밍 리스트 초기화
+        GUIDE_TIMES_INT = convertToLongArray(ORIGINAL_GUIDE_TIMES_MS).stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
+
+// 2. 정답 타이밍 리스트 초기화
+        CORRECT_TIMES_MS = convertToLongArray(USER_PRESS_TIMES_INT).stream()
+                .map(time -> time - finalOffset) // 👈 finalOffset은 이제 final입니다.
+                .collect(Collectors.toList());
+
+        CREAM_GUIDE_START -= finalOffset; // 크림 가이드 시작 (첫 번째 타이밍)
+        CREAM_ANIMATION_START -= finalOffset; // 반복 애니메이션 시작
+        CREAM_GUIDE_END -= finalOffset;   // ‼️ 가이드 이미지가 최종 사라지는 시점
+
+        CREAM_END_TIME -= finalOffset;
+
+        STRAWBERRY_GUIDE_START -= finalOffset; // 딸기 가이드 시작
+        STRAWBERRY_ANIMATION_START -= finalOffset; // 반복 애니메이션 시작
+        STRAWBERRY_GUIDE_END -= finalOffset; // 딸기 데코 시작 (가이드 숨김 시점)
+
+        STRAWBERRY_END_TIME -= finalOffset;
+
         this.controller = controller;
 
-        judgementManager = new RhythmJudgementManager(convertToLongArray(USER_PRESS_TIMES_INT), initialScoreOffset);
-       /* judgementManager.setPerfectTiming(100);
-        judgementManager.setGreatTiming(150);
-        judgementManager.setGoodTiming(200);*/
+        judgementManager = new RhythmJudgementManager(CORRECT_TIMES_MS, initialScoreOffset);
+
         // ‼️ 마우스 리스너 초기화 호출
         initializeMouseTracking();
     }
@@ -135,8 +170,8 @@ public class CakeStage3_2 extends CakeAnimation {
                             height = 293;
                         } else if (currentMusicTimeMs >= STRAWBERRY_GUIDE_END && currentMusicTimeMs <= STRAWBERRY_END_TIME) {
                             currentDecoImage = decoStrawberry;
-                            width = 320; // 230 * 1.3
-                            height = 273; // 210
+                            width = 276; // 230 * 1.2
+                            height = 252; // 210
                         } else {
                             return; // 해당 타이밍에 유효한 이미지가 없으면 추가하지 않음
                         }
@@ -249,16 +284,16 @@ public class CakeStage3_2 extends CakeAnimation {
         }
         // 🖼️ 가이드 카드병정 이미지
         if (guideCardImage1 != null && cardImage != null) {
-            for (int i = 0; i < GUIDE_TIMES_INT.length - 1; i++) {
-                if (i % 2 == 0 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i + 1])
+            for (int i = 0; i < GUIDE_TIMES_INT.size() - 1; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= GUIDE_TIMES_INT.get(i) && currentMusicTimeMs <= GUIDE_TIMES_INT.get(i+1))
                     cardImage = guideCardImage2;
-                if (i % 2 == 1 && currentMusicTimeMs >= GUIDE_TIMES_INT[i] && currentMusicTimeMs <= GUIDE_TIMES_INT[i + 1])
+                if (i % 2 == 1 && currentMusicTimeMs >= GUIDE_TIMES_INT.get(i) && currentMusicTimeMs <= GUIDE_TIMES_INT.get(i+1))
                     cardImage = guideCardImage1;
             }
-            for (int i = 0; i < USER_PRESS_TIMES_INT.length - 1; i++) {
-                if (i % 2 == 0 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i + 1])
+            for (int i = 0; i < CORRECT_TIMES_MS.size() - 1; i++) {
+                if (i % 2 == 0 && currentMusicTimeMs >= CORRECT_TIMES_MS.get(i) && currentMusicTimeMs <= CORRECT_TIMES_MS.get(i+1))
                     cardImage = guideCardImage2;
-                if (i % 2 == 1 && currentMusicTimeMs >= USER_PRESS_TIMES_INT[i] && currentMusicTimeMs <= USER_PRESS_TIMES_INT[i + 1])
+                if (i % 2 == 1 && currentMusicTimeMs >= CORRECT_TIMES_MS.get(i) && currentMusicTimeMs <= CORRECT_TIMES_MS.get(i+1))
                     cardImage = guideCardImage1;
             }
 
@@ -279,7 +314,7 @@ public class CakeStage3_2 extends CakeAnimation {
             if (currentTime < CREAM_ANIMATION_START) {
                 // ‼️ 6개의 판정 가이드 이미지를 각각의 위치에 guideLights[0]으로 계속 표시
                 for (int i = 0; i < 6; i++) {
-                    long flashTime = GUIDE_TIMES_INT[i];
+                    long flashTime = GUIDE_TIMES_INT.get(i);
 
                     if (currentTime >= flashTime) {
                         int x = GUIDE_FIXED_POSITIONS[i][0];
@@ -318,7 +353,7 @@ public class CakeStage3_2 extends CakeAnimation {
             if (currentTime < STRAWBERRY_ANIMATION_START) {
                 // ‼️ 6개의 판정 가이드 이미지를 각각의 위치에 guideLights[0]으로 계속 표시
                 for (int i = 6; i < 12; i++) {
-                    long flashTime = GUIDE_TIMES_INT[i];
+                    long flashTime = GUIDE_TIMES_INT.get(i);
 
                     if (currentTime >= flashTime) {
                         int x = GUIDE_FIXED_POSITIONS[i][0];

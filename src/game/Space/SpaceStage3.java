@@ -82,17 +82,30 @@ public class SpaceStage3 extends SpaceAnimation {
 
     private Timer trashAnimationTimer;
     private int trashFrameIndex = 0;
-    private Image currentTrashImage; // 현재 잔해 애니메이션 프레임 이미지
+    private Image currentTrashImage1; // 현재 잔해 애니메이션 프레임 이미지
+    private Image currentTrashImage2; // 현재 잔해 애니메이션 프레임 이미지
     private final int TRASH_ANIMATION_DELAY = 150; // 예시 딜레이 (ms)
     // 잔해 이미지 크기 조절 (1.0f = 원본 크기)
-    private float trashScale = 1.0f;
+    private float trashScale = 1.3f;
     private int trash1DrawX = 0;
     private int trash1DrawY = 0;
 
     private int trash2DrawX = 0;
     private int trash2DrawY = 0;
 
+    private boolean trashDone = false;
+    private boolean trashClear = false;
+
+    private int trash1Click = 0;
+    private int trash2Click = 0;
+
     private final double DIFFICULTY_FACTOR = 0.5; // 난이도 조절 계수 (0.5 = 50% 속도)
+
+    private Image controller;
+    private Image L_control01, L_control02, L_control03, L_control04, L_control05;
+    private Image R_control01, R_control02, R_control03, R_control04;
+    private Image L_currentControlImage;
+    private Image R_currentControlImage;
 
     // 이벤트 발동 여부
     private boolean event1Triggered = false;
@@ -156,7 +169,7 @@ public class SpaceStage3 extends SpaceAnimation {
     private final long SOUP_STOP_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[8] - 500;   // 72.5초에 정지 조건 활성화
     private final long SOUP_RESUME_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[19] + 50; // 75.5초에 재개
 
-    private final long trashStartTime = toJudgeMs(67265);
+    private final long trashStartTime = toJudgeMs(71000);
 
     // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
     private static long[] convertToLongArray(int[] array) {
@@ -213,6 +226,22 @@ public class SpaceStage3 extends SpaceAnimation {
         // 이미지 교체 예정
         stage3Banner = new ImageIcon(Main.class.getResource("../images/alienStage_image/space_stage3.png")).getImage();
 
+        controller = new ImageIcon(Main.class.getResource("../images/alienStage_image/controller.png")).getImage();
+
+        L_control01 = new ImageIcon(Main.class.getResource("../images/alienStage_image/L_control01.png")).getImage();
+        L_control02 = new ImageIcon(Main.class.getResource("../images/alienStage_image/L_control02.png")).getImage();
+        L_control03 = new ImageIcon(Main.class.getResource("../images/alienStage_image/L_control03.png")).getImage();
+        L_control04 = new ImageIcon(Main.class.getResource("../images/alienStage_image/L_control04.png")).getImage();
+        L_control05 = new ImageIcon(Main.class.getResource("../images/alienStage_image/L_control05.png")).getImage();
+
+        R_control01 = new ImageIcon(Main.class.getResource("../images/alienStage_image/R_control01.png")).getImage();
+        R_control02 = new ImageIcon(Main.class.getResource("../images/alienStage_image/R_control02.png")).getImage();
+        R_control03 = new ImageIcon(Main.class.getResource("../images/alienStage_image/R_control03.png")).getImage();
+        R_control04 = new ImageIcon(Main.class.getResource("../images/alienStage_image/R_control04.png")).getImage();
+
+        L_currentControlImage = L_control01;
+        R_currentControlImage = R_control01;
+
         // ‼️ currentUser는 cat1으로 고정 (사용자가 SpaceBar 누를 때만 cat2로 변경)
         currentUser = cat1;
         // ‼️ 외계인 손은 초기엔 alien1 또는 null로 설정 (화면에 표시 여부는 processStageEvents에서 제어)
@@ -222,6 +251,7 @@ public class SpaceStage3 extends SpaceAnimation {
         setupLaserAnimationTimer();
 
         setupBoomAnimationTimer();
+        setupTrashAnimationTimer();
 
         // 도착시간, 재료타입, x속도, y속도, x도착좌표, y도착좌표
         dropMats(USER_PRESS_TIMES_INT[0] + offset + 500, materialNames[random.nextInt(3)], 2.7 * DIFFICULTY_FACTOR, 3.6 * DIFFICULTY_FACTOR, 400);
@@ -250,6 +280,7 @@ public class SpaceStage3 extends SpaceAnimation {
                     Material mat = matList.get(i);
 
                     if (mat.getBounds().contains(clickX, clickY)) {
+                        if(trashDone && !trashClear) break;
                         new SwingWorker<Void, Void>() {
                             @Override
                             protected Void doInBackground() throws Exception {
@@ -298,9 +329,25 @@ public class SpaceStage3 extends SpaceAnimation {
                         break;
                     }
                 }
-                repaint();
             }
         });
+
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    if(trashDone && !trashClear) {
+                        Music.playEffect("trashSpace.mp3");
+                        trash1Click++;
+                        if(trash1Click >= 10){
+                            currentTrashImage1 = null;
+                            //currentTrashImage2 = null;
+                            trashClear = true;
+                        }
+                    }
+                }
+            }
+                         });
 
         // 1. 10ms 간격으로 타이머 설정
         gameTimer = new Timer(SLEEP_TIME, e -> {
@@ -311,6 +358,7 @@ public class SpaceStage3 extends SpaceAnimation {
         gameTimer.start();
 
     }
+
 
     protected void updateLaserFramesByClickX(int clickX) {
         final int MIN_X = 436;
@@ -410,13 +458,14 @@ public class SpaceStage3 extends SpaceAnimation {
     private void setupTrashAnimationTimer() {
         trashAnimationTimer = new Timer(TRASH_ANIMATION_DELAY, e -> {
             trashFrameIndex++;
-
+            if(currentMusicTimeMs >= trashStartTime+750 && currentMusicTimeMs <= trashStartTime+900) Music.playEffect("water_squelch.mp3");
             if (trashFrameIndex < TrashFrames1.length) {
-                currentTrashImage = TrashFrames1[trashFrameIndex];
+                currentTrashImage1 = TrashFrames1[trashFrameIndex];
+                //currentTrashImage2 = TrashFrames2[trashFrameIndex];
             } else {
                 // 애니메이션 종료 후 이미지 null로 설정
                 trashAnimationTimer.stop();
-                //currentTrashImage = null; -> 마우스 클릭 많이하면 사라지게
+                //currentTrashImage1 = null; -> 마우스 클릭 많이하면 사라지게 15번?
 
                 // ⭐️ [추가] 애니메이션 종료 후 그리기 위치 초기화
                 //trash1DrawX = -1;
@@ -426,6 +475,18 @@ public class SpaceStage3 extends SpaceAnimation {
         });
         trashAnimationTimer.setRepeats(true);
     }
+
+    private void startTrashAnimation() {
+        trashFrameIndex = 0;
+
+        if(trashDone == false) trashDone = true;
+
+        if (trashAnimationTimer.isRunning()) {
+            trashAnimationTimer.stop();
+        }
+        trashAnimationTimer.start();
+    }
+
 
     // ======== 🔹 슬로우 구간 정보 (ms단위)
     private static final double SLOW1_END_SEC = 31050;  // 슬로우1 끝
@@ -562,6 +623,30 @@ public class SpaceStage3 extends SpaceAnimation {
 
         g.drawImage(currentBoomImage, x, y, drawW, drawH, this);
 
+    }
+
+    private void drawTrash(Graphics g) {
+        int origW = currentTrashImage1.getWidth(this);
+        int origH = currentTrashImage1.getHeight(this);
+
+        // 🔹 스케일 적용된 크기s
+        int drawW = (int) (origW * trashScale);
+        int drawH = (int) (origH * trashScale);
+
+        // 클릭된 좌표에 그려짐
+        //int x = boomDrawX - drawW / 2;
+        //int y = boomDrawY - drawH / 2;
+
+        g.drawImage(currentTrashImage1, -250, -300, drawW, drawH, this);
+        //g.drawImage(currentTrashImage2, 100, -200, drawW, drawH, this);
+
+    }
+
+    public Rectangle getBounds(int x, int y, int width, int height) {
+        return new Rectangle((int) Math.round(x),  // X 시작점을 패딩만큼 왼쪽으로 이동
+                (int) Math.round(y),  // Y 시작점을 패딩만큼 위로 이동
+                width,         // 너비를 양쪽 패딩만큼 확장
+                height);
     }
 
     // answerTimeMs : 정답 타이밍
@@ -788,6 +873,8 @@ public class SpaceStage3 extends SpaceAnimation {
                 break;
             }
         }
+
+        if (currentMusicTimeMs >= trashStartTime && !trashDone) startTrashAnimation();
     }
 
     @Override
@@ -836,6 +923,13 @@ public class SpaceStage3 extends SpaceAnimation {
         }
 
         if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
+
+        if (currentTrashImage1 != null && currentTrashImage2 != null) drawTrash(g);
+
+        // 🔹 이제 컨트롤러 + 손(조종간) 그리기 → 이 위로 면발이 지나가게 됨
+        g.drawImage(controller, 0, 0, getWidth(), getHeight(), this);
+        g.drawImage(L_currentControlImage, 0, 0, getWidth(), getHeight(), this);
+        g.drawImage(R_currentControlImage, 0, 0, getWidth(), getHeight(), this);
 
     }
 
@@ -1216,3 +1310,5 @@ class Material {
     }
 
 }
+
+
