@@ -2,6 +2,7 @@ package game.Cake;
 
 import game.rhythm.RhythmJudgementManager;
 
+import game.Main;
 import game.Music; // 💡 [추가] Music 클래스 임포트
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -105,6 +106,25 @@ public class CakeStage1_1 extends CakeAnimation {
     private int nextStrawberryCreationIndex = 0;
     private int nextClearIndex = 0;
 
+    // 🐰 [추가] 토끼 인트로용 프레임
+    private Image[] rabbitFrames;
+    private static final int[] RABBIT_FRAME_DURATIONS = {
+            550, // rabbit1: 1.5초
+            550, // rabbit2: 1.5초
+            550, // rabbit3: 1.5초
+            550, // rabbit4
+            1850, // rabbit5
+            1850, // rabbit6
+            1850 , // rabbit7
+            550, // rabbit8
+            550, // rabbit9
+            550, // rabbit10
+            550  // rabbit11
+    };
+    private static final int RABBIT_TOTAL_DURATION_MS = Arrays.stream(RABBIT_FRAME_DURATIONS).sum();
+
+
+
 
     public CakeStage1_1(CakePanel controller, CakeStageData stageData, int initialScoreOffset) {
         super(controller, stageData, initialScoreOffset);
@@ -122,6 +142,12 @@ public class CakeStage1_1 extends CakeAnimation {
 
     @Override
     protected void loadStageSpecificResources() {
+
+        // ✅ 토끼 배열이 아직 null이면 여기서 생성
+        if (rabbitFrames == null) {
+            rabbitFrames = new Image[11];
+        }
+
         guideCardImage1 = loadImage("../images/cakeStage_image/stage1/Card01_stage1-1.png");
         guideCardImage2 = loadImage("../images/cakeStage_image/stage1/Card02_stage1-1.png");
         scissorsImage1 = loadImage("../images/cakeStage_image/stage1/Scissors01_stage1-1.png");
@@ -130,6 +156,19 @@ public class CakeStage1_1 extends CakeAnimation {
         shadowImage = loadImage("../images/cakeStage_image/stage1/StrawberryShadow_stage1-1.png");
 
         strawberryTopImage = loadImage("../images/cakeStage_image/stage1/StrawberryTop_stage1-1.png");
+
+        // 🐰 토끼 인트로 이미지 로드 (stage0 코드 그대로 가져옴)
+        rabbitFrames[0]  = loadImage("../images/cakeStage_image/rabbit/rabbit4.png");
+        rabbitFrames[1]  = loadImage("../images/cakeStage_image/rabbit/rabbit5.png");
+        rabbitFrames[2]  = loadImage("../images/cakeStage_image/rabbit/rabbit6.png");
+        rabbitFrames[3]  = loadImage("../images/cakeStage_image/rabbit/rabbit7.png");
+        rabbitFrames[4]  = loadImage("../images/cakeStage_image/rabbit/rabbit1.png");
+        rabbitFrames[5]  = loadImage("../images/cakeStage_image/rabbit/rabbit2.png");
+        rabbitFrames[6]  = loadImage("../images/cakeStage_image/rabbit/rabbit3.png");
+        rabbitFrames[7]  = loadImage("../images/cakeStage_image/rabbit/rabbit8.png");
+        rabbitFrames[8]  = loadImage("../images/cakeStage_image/rabbit/rabbit9.png");
+        rabbitFrames[9]  = loadImage("../images/cakeStage_image/rabbit/rabbit10.png");
+        rabbitFrames[10] = loadImage("../images/cakeStage_image/rabbit/rabbit11.png");
     }
 
     // 💡 [추가] 가위 클릭 효과음 재생 로직
@@ -149,6 +188,11 @@ public class CakeStage1_1 extends CakeAnimation {
     @Override
     public void updateStageLogic() {
         long adjustedMusicTimeMs = currentMusicTimeMs + SYNC_OFFSET_MS;
+
+        // 🐰 0~11초 동안은 토끼 인트로만 보여주고 게임 로직은 멈춤
+        if (currentMusicTimeMs < RABBIT_TOTAL_DURATION_MS) {
+            return;
+        }
 
         // 1. 🖼️ 그림자 생성 로직 (SHADOW_CREATION_TIMES_MS)
         if (nextShadowCreationIndex < SHADOW_CREATION_TIMES_MS.size() && !availableSlots.isEmpty()) {
@@ -258,6 +302,43 @@ public class CakeStage1_1 extends CakeAnimation {
     // ‼️ [수정] 그리기 메서드 (리스트 접근 전 동기화 블록 추가)
     @Override
     protected void drawStageObjects(Graphics2D g2) {
+        // 🐰 0~11초 토끼 인트로
+        if (currentMusicTimeMs < RABBIT_TOTAL_DURATION_MS) {
+
+            int time = currentMusicTimeMs;
+            int frameIndex = 0;
+            int accumulated = 0;
+
+            // 누적 시간으로 프레임 찾기
+            for (int i = 0; i < RABBIT_FRAME_DURATIONS.length; i++) {
+                accumulated += RABBIT_FRAME_DURATIONS[i];
+
+                if (time < accumulated) {
+                    frameIndex = i;
+                    break;
+                }
+            }
+
+            Image rabbit = rabbitFrames[frameIndex];
+
+            if (rabbit != null) {
+                int originalW = rabbit.getWidth(null);
+                int originalH = rabbit.getHeight(null);
+
+                double scale = 1;
+                int drawW = (int) (originalW * scale);
+                int drawH = (int) (originalH * scale);
+
+                int x = (Main.SCREEN_WIDTH - drawW) / 2;
+                int y = (Main.SCREEN_HEIGHT - drawH) / 2 + 80;
+
+                g2.drawImage(rabbit, x, y, drawW, drawH, null);
+            }
+
+            return;
+        }
+
+
 
         long adjustedMusicTimeMs = currentMusicTimeMs + SYNC_OFFSET_MS;
 
@@ -323,6 +404,11 @@ public class CakeStage1_1 extends CakeAnimation {
     private class ScissorsMouseListener extends MouseAdapter {
         @Override
         public void mousePressed(MouseEvent e) {
+            // 🐰 인트로 구간에서는 입력 무시
+            if (currentMusicTimeMs < RABBIT_TOTAL_DURATION_MS) {
+                return;
+            }
+
             isScissorsActive = true;
             scissorsX = e.getX() - (SCISSORS_SIZE / 2);
             scissorsY = e.getY() - (SCISSORS_SIZE / 2);

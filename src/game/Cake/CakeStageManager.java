@@ -125,14 +125,28 @@ public class CakeStageManager {
     }
 
     public static void resetGame() {
-        currentStage = 1;
-        currentStageData = null;
-        cumulativeScore = 0;
-        perfectCount = goodCount = missCount = 0;
+        // 1️⃣ 현재 재생 중인 케이크 BGM 정리
+        stopMusic();              // currentMusic.close() + null 처리
 
-        // stageDataList는 유지할지/새로 로드할지 너 구조에 맞게
+        // 2️⃣ 스테이지 진행 정보 초기화
+        currentStage = 1;         // 처음 스테이지부터 다시 시작
+        currentStageData = null;  // 실제 데이터는 startFirstStage()에서 세팅
+        cumulativeScore = 0;      // 누적 점수 초기화
+
+        // 3️⃣ 판정 카운트 초기화
+        perfectCount = 0;
+        goodCount = 0;
+        missCount = 0;
+
+        // 4️⃣ 기습 관련 상태 초기화
+        isSurpriseStageOccurred = false;
+
+        // 5️⃣ 스테이지 데이터 리스트 준비
+        //    (이미 만들어져 있으면 그대로 두고, 없으면 새로 생성)
+        if (stageDataList == null || stageDataList.isEmpty()) {
+            initializeStageData();
+        }
     }
-
 
     public static void resetScore() {
         cumulativeScore = 0;
