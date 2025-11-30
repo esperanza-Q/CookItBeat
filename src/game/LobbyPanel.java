@@ -6,7 +6,7 @@ import java.awt.*;
 
 public class LobbyPanel extends JPanel {
     private GameFrame gameFrame;
-    private String username;
+    private static String username;
     private Image background;
     private Image alienTxt;
     private Image cakeTxt;
@@ -108,5 +108,9 @@ public class LobbyPanel extends JPanel {
         if (background != null) {
             g.drawImage(background, 0, 0, getWidth(), getHeight(), null);
         }
+    }
+
+    public static String getUsername() {
+        return username;
     }
 }

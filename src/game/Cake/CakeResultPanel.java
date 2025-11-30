@@ -54,7 +54,7 @@ public class CakeResultPanel extends JPanel {
         // ------------------ 👆 [수정/추가됨] 이미지 및 스타일 설정 👆 ------------------
 
         lobbyButton.setFocusPainted(false);
-        lobbyButton.setBounds(880, 600, 300, 60); // 원하는 위치면 여기만 바꾸면 됨
+        lobbyButton.setBounds(950, 550, 300, 100); // 원하는 위치면 여기만 바꾸면 됨
 
         lobbyButton.addActionListener(e -> {
             // 결과 음악 끄기
