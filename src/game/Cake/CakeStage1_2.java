@@ -90,10 +90,11 @@ public class CakeStage1_2 extends CakeAnimation {
                 .collect(Collectors.toList());
 
         final long OFFSET_MS = 100;
+        final long Offset = CakeStageManager.isSurpriseStageOccurred() ? OFFSET_MS : 0;
 
         this.judgementManager = new RhythmJudgementManager(
                 CORRECT_TIMES_MS.stream()
-                        .map(startTime -> startTime + OFFSET_MS)
+                        .map(startTime -> startTime + Offset)
                         .collect(Collectors.toList()),
                 initialScoreOffset
         );
