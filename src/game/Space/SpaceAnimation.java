@@ -227,34 +227,6 @@ public class SpaceAnimation extends JPanel {
             }
         });
 
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-
-                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-
-                    Music.playEffect("water_pong2.mp3");
-                    isHolding = true;
-                    pressTime = System.currentTimeMillis();
-                    autoReverse = false;
-
-                    startForwardAnimation();
-
-                    // ✅ [수정] 스페이스바 로직(판정 처리 포함)을 처리하는 protected 메서드 호출
-                    processSpaceKeyPressLogic();
-                }
-            }
-
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE && isHolding) {
-                    isHolding = false;
-                }
-            }
-        });
-
-
         setupAnimationTimers();
         setupJudgementTimer(); // ✅ 판정 결과 출력 타이머 초기화
         setFocusable(true);
@@ -484,7 +456,7 @@ public class SpaceAnimation extends JPanel {
         }
     }
 
-    private void startForwardAnimation() {
+    protected void startForwardAnimation() {
         if (forwardTimer.isRunning()) return;
         if (reverseTimer.isRunning()) reverseTimer.stop();
 

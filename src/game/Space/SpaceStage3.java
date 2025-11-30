@@ -169,7 +169,7 @@ public class SpaceStage3 extends SpaceAnimation {
     private final long SOUP_STOP_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[8] - 500;   // 72.5초에 정지 조건 활성화
     private final long SOUP_RESUME_TIME = convertToLongArray(USER_PRESS_TIMES_INT)[19] + 50; // 75.5초에 재개
 
-    private final long trashStartTime = toJudgeMs(71000);
+    private final long trashStartTime = toJudgeMs(70700);
 
     // ✅ [추가] static 헬퍼 메서드: int[]를 long[]으로 변환 (생성자 오류 해결)
     private static long[] convertToLongArray(int[] array) {
@@ -884,8 +884,6 @@ public class SpaceStage3 extends SpaceAnimation {
 
     @Override
     public void drawStageObjects(Graphics g) {
-        // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
-        g.drawImage(currentUser, 0, 0, null);
 
         // 배너 오버레이 (맨 위)
         if (bannerVisible && stage3Banner != null) {
@@ -924,12 +922,15 @@ public class SpaceStage3 extends SpaceAnimation {
 
         if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
 
-        if (currentTrashImage1 != null && currentTrashImage2 != null) drawTrash(g);
+        if (currentTrashImage1 != null) drawTrash(g);
 
         // 🔹 이제 컨트롤러 + 손(조종간) 그리기 → 이 위로 면발이 지나가게 됨
         g.drawImage(controller, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(L_currentControlImage, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(R_currentControlImage, 0, 0, getWidth(), getHeight(), this);
+
+        // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
+        g.drawImage(currentUser, 0, 0, null);
 
     }
 

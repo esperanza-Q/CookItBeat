@@ -1,6 +1,7 @@
 package game.Space;
 
 import game.Main;
+import game.Music;
 import game.rhythm.RhythmJudgementManager;
 
 import javax.swing.*;
@@ -31,6 +32,19 @@ public class SpaceStage1 extends SpaceAnimation {
     private Timer waterAnimationTimer;
     private int waterFrameIndex = 0;
     private final int WATER_ANIMATION_DELAY = 50; // 물총 이미지 전환 속도 (ms)
+
+    private boolean isHolding = false;
+    private long pressTime;
+    private boolean autoReverse = false;
+
+    private Image L_currentControlImage;
+    private Image R_currentControlImage;
+    private Image ufo;
+
+    private boolean isAnimating = false; // 컨트롤러 중복 애니메이션 방지
+    private Timer forwardTimer, reverseTimer;
+    private int frameIndex = 0;
+    private Image[] rightFrames; // 컨트롤러 애니메이션 프레임 배열
 
     // 이벤트 발동 여부
     private boolean event1Triggered = false;
@@ -114,6 +128,32 @@ public class SpaceStage1 extends SpaceAnimation {
         currentUser = cat1;
         // ‼️ 외계인 손은 초기엔 alien1 또는 null로 설정 (화면에 표시 여부는 processStageEvents에서 제어)
         currentAlien = alien1; // 초기에는 보이지 않도록 null로 설정
+
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+
+                    Music.playEffect("water_pong2.mp3");
+                    isHolding = true;
+                    pressTime = System.currentTimeMillis();
+                    autoReverse = false;
+
+                    startForwardAnimation();
+
+                    // ✅ [수정] 스페이스바 로직(판정 처리 포함)을 처리하는 protected 메서드 호출
+                    processSpaceKeyPressLogic();
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE && isHolding) {
+                    isHolding = false;
+                }
+            }
+        });
 
         // ✅ [추가] 물총 애니메이션 타이머 설정
         setupWaterAnimationTimer();
