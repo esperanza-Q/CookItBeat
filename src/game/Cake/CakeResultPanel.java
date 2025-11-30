@@ -108,7 +108,7 @@ public class CakeResultPanel extends JPanel {
         this.finalScore = score;
 
         // ✅ 점수 컷은 너가 원하는대로 조정하면 됨
-        if (score >= 2500) {
+        if (score >= 3000) {
             resultText = "Perfect RANK!";
             resultImage = new ImageIcon(Main.class.getResource(
                     "../images/cakeStage_image/Result_Perfect.png"

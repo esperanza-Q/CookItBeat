@@ -38,6 +38,10 @@ public class SpaceStage3 extends SpaceAnimation {
     private Image cat2;
     private Image cannon;
 
+    // ✅ [추가] 스페이스 키 가이드 이미지
+    private Image keySpaceGuide;
+
+
     private Image stage3Banner; // 53초에 띄울 이미지
     private boolean bannerVisible = false;
     private int bannerHideAtMs = 0;
@@ -241,6 +245,9 @@ public class SpaceStage3 extends SpaceAnimation {
 
         L_currentControlImage = L_control01;
         R_currentControlImage = R_control01;
+
+        // ✅ [추가] 스페이스 키 가이드 로드
+        keySpaceGuide = new ImageIcon(Main.class.getResource("../images/alienStage_image/key_space.png")).getImage();
 
         // ‼️ currentUser는 cat1으로 고정 (사용자가 SpaceBar 누를 때만 cat2로 변경)
         currentUser = cat1;
@@ -922,12 +929,40 @@ public class SpaceStage3 extends SpaceAnimation {
 
         if (currentBoomImage != null && boomDrawX != -1 && boomDrawY != -1) drawBoom(g);
 
-        if (currentTrashImage1 != null) drawTrash(g);
 
         // 🔹 이제 컨트롤러 + 손(조종간) 그리기 → 이 위로 면발이 지나가게 됨
         g.drawImage(controller, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(L_currentControlImage, 0, 0, getWidth(), getHeight(), this);
         g.drawImage(R_currentControlImage, 0, 0, getWidth(), getHeight(), this);
+
+        if (currentTrashImage1 != null) {
+            drawTrash(g);
+
+            // ✅ trash 나올 때만 스페이스 키 가이드 표시
+            if (keySpaceGuide != null && !trashClear) {
+
+                Graphics2D g2 = (Graphics2D) g.create(); // 원본 g 건드리지 않기 위해 복사
+
+                // 🔹 scale / alpha (원하면 값 바꿔도 됨)
+                double scale = 0.09;      // 예: 0.18
+                float alpha = 0.8f;       // 예: 0.65f
+
+                int origW = keySpaceGuide.getWidth(this);
+                int origH = keySpaceGuide.getHeight(this);
+
+                int drawW = (int) (origW * scale);
+                int drawH = (int) (origH * scale);
+
+                int padding = 40;
+                int guideX = getWidth() - drawW - padding - 550;
+                int guideY = getHeight() - drawH - padding - 150;
+
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+                g2.drawImage(keySpaceGuide, guideX, guideY, drawW, drawH, this);
+
+                g2.dispose();
+            }
+        }
 
         // ‼️ 고양이 손은 현재 위치 그대로 그립니다.
         g.drawImage(currentUser, 0, 0, null);

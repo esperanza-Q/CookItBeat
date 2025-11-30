@@ -4,6 +4,9 @@ package game;
 import javax.swing.*;
 import java.awt.*;
 
+import game.Cake.CakeStageManager;
+import game.Space.StageManager;
+
 public class LobbyPanel extends JPanel {
     private GameFrame gameFrame;
     private static String username;
@@ -49,9 +52,13 @@ public class LobbyPanel extends JPanel {
         add(alienButton);
         // 💡 외계인 버튼 클릭 이벤트 리스너 추가
         alienButton.addActionListener(e -> {
-            // 버튼 클릭 시 수행할 동작: 외계인 스테이지 인트로 패널을 실행
+            // 1️⃣ 이전 판 정보만 싹 정리 (이전 게임 음악/타이머/점수 리셋)
+            StageManager.resetGame();
+
+            // 2️⃣ 인트로 화면으로만 이동 (게임 음악은 아직 X)
             gameFrame.showSpaceIntroScreen();
         });
+
 
         // 💡 케이크 텍스트를 위한 JLabel
         JLabel cakeTextLabel = createTextLabel(cakeTxt, CAKE_BUTTON_BOUNDS);
@@ -60,14 +67,23 @@ public class LobbyPanel extends JPanel {
         add(cakeTextLabel);
         // --- 케이크 버튼 ---
         JButton cakeButton = createStageButton(cake1, cake2);
-        cakeButton.setBounds(CAKE_BUTTON_BOUNDS); // 💡 위치와 크기 설정
+        cakeButton.setBounds(CAKE_BUTTON_BOUNDS);
         add(cakeButton);
-        // 💡 케이크 버튼 클릭 이벤트 리스너 추가
+
         cakeButton.addActionListener(e -> {
-            // 버튼 클릭 시 수행할 동작: 케이크 스테이지 패널을 실행
+            // 1️⃣ 이전 케이크 게임 상태 싹 정리
+            CakeStageManager.stopMusic();     // 혹시 남아 있는 케이크 BGM 종료
+            CakeStageManager.resetGame();     // 스테이지 번호, 현재 스테이지 데이터 초기화
+            CakeStageManager.resetScore();    // 누적 점수 + 판정 카운트 0으로
+
+            // 2️⃣ 첫 스테이지 정보 세팅 (혹시 CakePanel/CakeIntro에서 안 해주고 있으면 필요)
+            CakeStageManager.startFirstStage();
+
+            // 3️⃣ 케이크 인트로 화면으로 전환
             gameFrame.showCakeIntroScreen();
         });
-    // --- 뒤로가기 버튼 ---
+
+        // --- 뒤로가기 버튼 ---
         JButton backButton = createStageButton(back1, back2);
         backButton.setBounds(BACK_BUTTON_BOUNDS); // 💡 오른쪽 상단 위치와 크기 설정
         add(backButton);
