@@ -337,7 +337,7 @@ public class CakeIntro extends JPanel {
                 alienVoice.close();
                 alienVoice = null;
             }
-            alienVoice = new Music("aline_sound.mp3", false);
+            alienVoice = new Music("cardVoice.mp3", false);
             alienVoice.start();
         } catch (Exception ex) {
             System.err.println("에일리언 보이스 재생 실패: " + ex.getMessage());

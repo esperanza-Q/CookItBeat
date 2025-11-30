@@ -1,6 +1,7 @@
 package game.Cake;
 
 import game.GameFrame;
+import game.LobbyPanel;
 import game.Music;
 
 import javax.swing.*;
@@ -416,5 +417,13 @@ public class CakePanel extends JPanel implements Runnable {
             }
         }
         return null;
+    }
+
+    public void switchToMainScreen() {
+        gameFrame.showLobbyScreen(LobbyPanel.getUsername());
+    }
+
+    public void switchToCakeScreen() {
+        gameFrame.showCakeScreen();
     }
 }

@@ -41,7 +41,7 @@ public class ResultPanel extends JPanel {
         lobbyButton.setBorderPainted(false);
         lobbyButton.setContentAreaFilled(false);
         lobbyButton.setFocusPainted(false);
-        lobbyButton.setBounds(880, 600, 300, 60);
+        lobbyButton.setBounds(950, 550, 300, 100);
 
         lobbyButton.addActionListener(e -> {
             if (resultMusic != null) {
