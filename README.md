@@ -12,7 +12,7 @@
 
   <img src="https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=java&logoColor=white">
   <img src="https://img.shields.io/badge/IDE-IntelliJ-000000?style=for-the-badge&logo=intellij-idea&logoColor=white">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge">
+  <img src="https://img.shields.io/badge/GUI-Java_Swing-orange?style=for-the-badge&logo=java&logoColor=white">
 </div>
 
 ---
